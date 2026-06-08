@@ -124,8 +124,11 @@ function App() {
   const [singleName, setSingleName] = useState('');
   const [singleRating, setSingleRating] = useState(7.0);
   const [bulkText, setBulkText] = useState('');
-  const [numTeams, setNumTeams] = useState(2);
-  const [matchSize, setMatchSize] = useState(7); // default 7vs7
+  const numTeams = 2; // Sempre 2 squadre
+  const [matchSize, setMatchSize] = useState(() => {
+    const saved = localStorage.getItem('green-calcio-matchSize');
+    return saved ? parseInt(saved) : 7;
+  }); // 7 = 7vs7, 5 = 5vs5
   const [teams, setTeams] = useState(() => {
     const saved = localStorage.getItem('green-calcio-teams');
     if (saved) {
@@ -154,6 +157,10 @@ function App() {
     localStorage.setItem('green-calcio-teams', JSON.stringify(teams));
   }, [teams]);
 
+  useEffect(() => {
+    localStorage.setItem('green-calcio-matchSize', matchSize.toString());
+  }, [matchSize]);
+
   // Se cambiano le squadre generate, aggiorniamo i selettori del campo
   useEffect(() => {
     if (teams && teams.length >= 2) {
@@ -179,6 +186,21 @@ function App() {
 
     return { total, available, gksAvailable, regularsAvailable, avgRating, avgAvailable, sumAvailable };
   }, [players]);
+
+  // --- STATO CONTEGGIO GIOCATORI vs MODALITÀ ---
+  const playerCountStatus = useMemo(() => {
+    const required = matchSize * 2; // 7v7 = 14, 5v5 = 10
+    const available = stats.available;
+    const diff = available - required;
+
+    if (diff === 0) {
+      return { ok: true, message: `Perfetto! ${available} giocatori disponibili per ${matchSize}v${matchSize}.`, type: 'success' };
+    } else if (diff > 0) {
+      return { ok: false, message: `Ci sono ${diff} giocatore/i in più rispetto ai ${required} necessari per il ${matchSize}v${matchSize}. Rimuovi o segna come assenti ${diff} giocatore/i.`, type: 'warning' };
+    } else {
+      return { ok: false, message: `Mancano ${Math.abs(diff)} giocatore/i per il ${matchSize}v${matchSize}. Servono ${required} giocatori, ne hai ${available}.`, type: 'error' };
+    }
+  }, [stats.available, matchSize]);
 
   // --- GESTIONE LISTA ---
   const handleAddSingle = (e) => {
@@ -293,9 +315,15 @@ function App() {
   // --- ALGORITMO DI BILANCIAMENTO SQUADRE (CON VINCOLI PORTIERI E BONUS) ---
   const handleGenerateTeams = () => {
     const availablePlayers = players.filter(p => p.available);
+    const required = matchSize * 2;
 
-    if (availablePlayers.length < numTeams) {
-      alert(`Servono almeno ${numTeams} giocatori disponibili per formare le squadre.`);
+    if (availablePlayers.length !== required) {
+      const diff = availablePlayers.length - required;
+      if (diff > 0) {
+        alert(`Hai ${diff} giocatore/i in più! Per il ${matchSize}v${matchSize} servono esattamente ${required} giocatori disponibili. Segna ${diff} giocatore/i come assenti.`);
+      } else {
+        alert(`Mancano ${Math.abs(diff)} giocatore/i! Per il ${matchSize}v${matchSize} servono esattamente ${required} giocatori disponibili.`);
+      }
       return;
     }
 
@@ -556,7 +584,7 @@ function App() {
       text += `${emoji} *${t.name.toUpperCase()}* (Media: ${avg} • Tot con Bonus: ${t.ratingSum.toFixed(1)})\n`;
 
       t.players.forEach((p, pIdx) => {
-        text += `${pIdx + 1}. ${p.name}${p.isGoalkeeper ? ' 🧤' : ''} (${p.rating})\n`;
+        text += `${pIdx + 1}. ${p.name}${p.isGoalkeeper ? ' 🧤' : ''}\n`;
       });
       text += `\n`;
     });
@@ -1170,28 +1198,44 @@ function App() {
             </h2>
 
             <div className="settings-section">
-              <div className="config-row">
-                <div className="form-group">
-                  <label htmlFor="numTeamsSelect" className="form-label">Numero Squadre</label>
-                  <select
-                    id="numTeamsSelect"
-                    className="form-input"
-                    value={numTeams}
-                    onChange={(e) => setNumTeams(parseInt(e.target.value))}
+              {/* Selettore Modalità 7v7 / 5v5 */}
+              <div className="form-group">
+                <label className="form-label">Modalità di Gioco</label>
+                <div className="match-mode-toggle">
+                  <button
+                    type="button"
+                    className={`mode-btn ${matchSize === 7 ? 'active' : ''}`}
+                    onClick={() => setMatchSize(7)}
                   >
-                    <option value={2}>2 Squadre (Black vs White)</option>
-                    <option value={3}>3 Squadre</option>
-                    <option value={4}>4 Squadre</option>
-                    <option value={5}>5 Squadre</option>
-                    <option value={6}>6 Squadre</option>
-                  </select>
+                    <span className="mode-icon">⚽</span>
+                    <span className="mode-label">7 vs 7</span>
+                    <span className="mode-sub">14 giocatori</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`mode-btn ${matchSize === 5 ? 'active' : ''}`}
+                    onClick={() => setMatchSize(5)}
+                  >
+                    <span className="mode-icon">🏃</span>
+                    <span className="mode-label">5 vs 5</span>
+                    <span className="mode-sub">10 giocatori</span>
+                  </button>
                 </div>
+              </div>
 
+              <div className="config-row">
                 <div className="form-group">
                   <label className="form-label">Giocatori Attivi</label>
                   <div className="form-input" style={{ background: 'rgba(0,0,0,0.15)', cursor: 'default', display: 'flex', justifyContent: 'space-between' }}>
                     <span>Disponibili:</span>
                     <strong style={{ color: 'var(--primary)' }}>{stats.available}</strong>
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Richiesti</label>
+                  <div className="form-input" style={{ background: 'rgba(0,0,0,0.15)', cursor: 'default', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Per {matchSize}v{matchSize}:</span>
+                    <strong style={{ color: playerCountStatus.ok ? 'var(--primary)' : 'var(--accent-red)' }}>{matchSize * 2}</strong>
                   </div>
                 </div>
               </div>
@@ -1207,25 +1251,29 @@ function App() {
                 </div>
               </div>
 
-              {stats.available > 0 && (
-                <div className="gauge-info-text">
-                  <span>
-                    La roster ha {stats.available} giocatori pronti. Ciascuna delle {numTeams} squadre conterrà circa{' '}
-                    <strong>{Math.floor(stats.available / numTeams)}</strong> o{' '}
-                    <strong>{Math.ceil(stats.available / numTeams)}</strong> giocatori.
-                  </span>
-                </div>
-              )}
+              {/* Indicatore stato conteggio giocatori */}
+              <div className={`player-count-status status-${playerCountStatus.type}`}>
+                <span className="status-icon">
+                  {playerCountStatus.type === 'success' ? '✅' : playerCountStatus.type === 'warning' ? '⚠️' : '❌'}
+                </span>
+                <span>{playerCountStatus.message}</span>
+              </div>
 
               <button
                 type="button"
                 className="btn btn-generate"
                 onClick={handleGenerateTeams}
-                disabled={stats.available < numTeams}
+                disabled={!playerCountStatus.ok}
               >
                 <span>Genera Squadre Equilibrate</span>
                 <span style={{ fontSize: '1.2rem' }}>⚽</span>
               </button>
+
+              {!playerCountStatus.ok && (
+                <div className="gauge-info-text" style={{ textAlign: 'center', color: 'var(--accent-red)', fontWeight: 500 }}>
+                  ⛔ Generazione bloccata: correggi il numero di giocatori
+                </div>
+              )}
             </div>
           </div>
 

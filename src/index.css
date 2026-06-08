@@ -514,6 +514,98 @@ body {
   background: linear-gradient(135deg, #34d399 0%, var(--primary) 100%);
 }
 
+/* --- Match Mode Toggle (7v7 / 5v5) --- */
+.match-mode-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.mode-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 16px 12px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 2px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  font-family: var(--font-sans);
+  color: var(--text-muted);
+}
+
+.mode-btn:hover {
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.05);
+  transform: translateY(-2px);
+}
+
+.mode-btn.active {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: var(--primary);
+  color: #fff;
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.2), inset 0 0 20px rgba(16, 185, 129, 0.05);
+}
+
+.mode-icon {
+  font-size: 1.6rem;
+}
+
+.mode-label {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.mode-btn.active .mode-label {
+  color: var(--primary);
+  text-shadow: 0 0 8px var(--primary-glow);
+}
+
+.mode-sub {
+  font-size: 0.78rem;
+  font-weight: 400;
+  opacity: 0.7;
+}
+
+/* --- Player Count Status Indicator --- */
+.player-count-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.4;
+  animation: fadeInUp 0.3s ease;
+}
+
+.player-count-status .status-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.player-count-status.status-success {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #34d399;
+}
+
+.player-count-status.status-warning {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #fbbf24;
+}
+
+.player-count-status.status-error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
+}
+
 /* --- Risultati Squadre --- */
 .results-header {
   display: flex;
