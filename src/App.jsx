@@ -1397,7 +1397,7 @@ function App() {
                   className="btn btn-secondary"
                   onClick={handleCopyFormattedText}
                 >
-                  <IconCopy /> Copia per WhatsApp
+                  <IconCopy /> Copia testuale
                 </button>
                 <button
                   type="button"
