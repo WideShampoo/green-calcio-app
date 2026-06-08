@@ -226,13 +226,26 @@ function App() {
       const trimmed = line.trim();
       if (!trimmed) return;
 
-      const ratingMatch = trimmed.match(/(\b[1-9]\b(\.[0-9]+)?|\b10\b(\.0+)?|\b[1-9],[0-9]+)/);
       let rating = 7.0;
       let name = trimmed;
 
-      if (ratingMatch) {
-        rating = parseFloat(ratingMatch[0].replace(',', '.'));
-        name = trimmed.replace(ratingMatch[0], '').replace(/[:-–—()]/g, '').trim();
+      // Prova a trovare il voto alla fine della riga: "Luca 8.5", "Marco - 7", "Giovanni (6.0)"
+      const ratingAtEnd = trimmed.match(/^(.+?)\s*[:\-–—]*\s*\(?(\d{1,2}(?:[.,]\d+)?)\)?\s*$/);
+      // Prova a trovare il voto all'inizio della riga: "9 Alessandro"
+      const ratingAtStart = trimmed.match(/^(\d{1,2}(?:[.,]\d+)?)\s+(.+)$/);
+
+      if (ratingAtEnd) {
+        const parsedRating = parseFloat(ratingAtEnd[2].replace(',', '.'));
+        if (parsedRating >= 1 && parsedRating <= 10) {
+          name = ratingAtEnd[1].replace(/[:\-–—()]/g, '').trim();
+          rating = parsedRating;
+        }
+      } else if (ratingAtStart) {
+        const parsedRating = parseFloat(ratingAtStart[1].replace(',', '.'));
+        if (parsedRating >= 1 && parsedRating <= 10) {
+          name = ratingAtStart[2].trim();
+          rating = parsedRating;
+        }
       }
 
       name = name.replace(/\s+/g, ' ');
