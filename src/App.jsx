@@ -910,12 +910,46 @@ function App() {
       ctx.fillText(`Dislivello Voti: ${balanceMetrics.diff} punti  •  Indice Equilibrio: ${balanceMetrics.percentage}%`, canvasWidth / 2, 800);
     }
 
-    // Esegui il download
-    const link = document.createElement('a');
-    link.download = 'black-vs-white.png';
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-    showToast("Immagine black-vs-white.png scaricata! 📸");
+    // Condividi o scarica l'immagine
+    canvas.toBlob(async (blob) => {
+      if (!blob) return;
+
+      const file = new File(
+        [blob],
+        'black-vs-white.png',
+        { type: 'image/png' }
+      );
+
+      try {
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: 'Green Calcio',
+            text: 'Formazioni ufficiali Green Calcio'
+          });
+
+          showToast("Immagine pronta per la condivisione! 📲");
+        } else {
+          const link = document.createElement('a');
+          link.download = 'black-vs-white.png';
+          link.href = URL.createObjectURL(blob);
+          link.click();
+          URL.revokeObjectURL(link.href);
+
+          showToast("Immagine black-vs-white.png scaricata! 📸");
+        }
+      } catch (error) {
+        console.error("Errore condivisione/download:", error);
+
+        const link = document.createElement('a');
+        link.download = 'black-vs-white.png';
+        link.href = URL.createObjectURL(blob);
+        link.click();
+        URL.revokeObjectURL(link.href);
+
+        showToast("Download immagine avviato 📸");
+      }
+    }, 'image/png');
   };
 
   // --- UTILITY PER TOAST NOTIFICATIONS ---
