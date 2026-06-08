@@ -110,14 +110,7 @@ function App() {
         console.error(e);
       }
     }
-    // Fallback con ID univoci e 14 giocatori per 7 vs 7
-    return SAMPLE_PLAYERS.map((p, idx) => ({
-      id: `sample-${idx}-${Date.now()}`,
-      name: p.name,
-      rating: p.rating,
-      available: true,
-      isGoalkeeper: p.isGoalkeeper || false
-    }));
+    return [];
   });
 
   const [activeTab, setActiveTab] = useState('singolo'); // 'singolo' | 'massivo'
