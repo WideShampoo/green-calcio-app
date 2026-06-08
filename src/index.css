@@ -1,7 +1,7 @@
 /* --- Google Font Import (già impostato anche in index.html) --- */
 :root {
   --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  
+
   /* Palette Colori Premium - Tema Calcio Dark/Neon */
   --bg-darker: #0a0d0c;
   --bg-dark: #0f1512;
@@ -9,20 +9,22 @@
   --bg-card-hover: rgba(30, 45, 39, 0.8);
   --border-glass: rgba(16, 185, 129, 0.15);
   --border-glass-hover: rgba(16, 185, 129, 0.35);
-  
-  --primary: #10b981; /* Emerald Green */
+
+  --primary: #10b981;
+  /* Emerald Green */
   --primary-glow: rgba(16, 185, 129, 0.4);
   --primary-dark: #059669;
-  
-  --secondary: #3b82f6; /* Blue for Team B */
+
+  --secondary: #3b82f6;
+  /* Blue for Team B */
   --secondary-glow: rgba(59, 130, 246, 0.4);
   --accent-orange: #f59e0b;
   --accent-red: #ef4444;
-  
+
   --text-main: #f1f5f9;
   --text-muted: #94a3b8;
   --text-inverse: #0f172a;
-  
+
   --shadow-main: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
   --shadow-neon: 0 0 15px var(--primary-glow);
   --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -49,14 +51,17 @@ body {
   width: 8px;
   height: 8px;
 }
+
 ::-webkit-scrollbar-track {
   background: var(--bg-darker);
 }
+
 ::-webkit-scrollbar-thumb {
   background: var(--bg-card);
   border-radius: 4px;
   border: 1px solid var(--border-glass);
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: var(--primary-dark);
 }
@@ -635,12 +640,36 @@ body {
   gap: 16px;
 }
 
-.team-card.team-1 { border-color: #334155; } /* Black Team */
-.team-card.team-2 { border-color: #e2e8f0; } /* White Team */
-.team-card.team-3 { border-color: #f59e0b; } /* Yellow */
-.team-card.team-4 { border-color: #a855f7; } /* Purple */
-.team-card.team-5 { border-color: #ec4899; } /* Pink */
-.team-card.team-6 { border-color: #06b6d4; } /* Cyan */
+.team-card.team-1 {
+  border-color: #334155;
+}
+
+/* Black Team */
+.team-card.team-2 {
+  border-color: #e2e8f0;
+}
+
+/* White Team */
+.team-card.team-3 {
+  border-color: #f59e0b;
+}
+
+/* Yellow */
+.team-card.team-4 {
+  border-color: #a855f7;
+}
+
+/* Purple */
+.team-card.team-5 {
+  border-color: #ec4899;
+}
+
+/* Pink */
+.team-card.team-6 {
+  border-color: #06b6d4;
+}
+
+/* Cyan */
 
 .team-header {
   display: flex;
@@ -729,12 +758,37 @@ body {
   color: var(--text-muted);
 }
 
-.team-1 .jersey-number { background: rgba(255, 255, 255, 0.1); color: #f1f5f9; border: 1px solid #475569; }
-.team-2 .jersey-number { background: rgba(255, 255, 255, 0.85); color: #0f172a; border: 1px solid #cbd5e1; }
-.team-3 .jersey-number { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
-.team-4 .jersey-number { background: rgba(168, 85, 247, 0.2); color: #a855f7; }
-.team-5 .jersey-number { background: rgba(236, 72, 153, 0.2); color: #ec4899; }
-.team-6 .jersey-number { background: rgba(6, 182, 212, 0.2); color: #06b6d4; }
+.team-1 .jersey-number {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f1f5f9;
+  border: 1px solid #475569;
+}
+
+.team-2 .jersey-number {
+  background: rgba(255, 255, 255, 0.85);
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+}
+
+.team-3 .jersey-number {
+  background: rgba(245, 158, 11, 0.2);
+  color: #f59e0b;
+}
+
+.team-4 .jersey-number {
+  background: rgba(168, 85, 247, 0.2);
+  color: #a855f7;
+}
+
+.team-5 .jersey-number {
+  background: rgba(236, 72, 153, 0.2);
+  color: #ec4899;
+}
+
+.team-6 .jersey-number {
+  background: rgba(6, 182, 212, 0.2);
+  color: #06b6d4;
+}
 
 .team-player-name {
   font-size: 0.95rem;
@@ -862,7 +916,7 @@ body {
   border-radius: 12px;
   position: relative;
   overflow: hidden;
-  box-shadow: inset 0 0 50px rgba(0,0,0,0.6), 0 10px 30px rgba(0,0,0,0.5);
+  box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.6), 0 10px 30px rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: space-between;
   padding: 20px;
@@ -1032,7 +1086,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   border: 1px solid var(--text-muted);
 }
 
@@ -1040,7 +1094,7 @@ body {
   font-size: 0.8rem;
   font-weight: 600;
   color: #fff;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1144,6 +1198,7 @@ body {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -1155,6 +1210,7 @@ body {
     opacity: 0;
     transform: scale(0.9);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -1162,9 +1218,12 @@ body {
 }
 
 @keyframes float {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0px) rotate(0deg);
   }
+
   50% {
     transform: translateY(-8px) rotate(5deg);
   }
@@ -1174,7 +1233,144 @@ body {
   from {
     transform: scale(1);
   }
+
   to {
     transform: scale(1.05);
+  }
+}
+
+
+@media (max-width: 600px) {
+  body {
+    overflow-x: hidden;
+  }
+
+  .app-container {
+    width: 100%;
+    max-width: 100%;
+    padding: 20px 12px;
+    gap: 20px;
+  }
+
+  .glass-card {
+    padding: 16px;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .app-title {
+    font-size: 2rem;
+  }
+
+  .app-subtitle {
+    font-size: 0.95rem;
+  }
+
+  .tabs-header,
+  .match-mode-toggle,
+  .config-row {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+  }
+
+  .form-input,
+  .form-textarea,
+  select,
+  input,
+  textarea {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .results-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .results-actions {
+    width: 100%;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .results-actions .btn,
+  .btn-group .btn,
+  .btn {
+    width: 100%;
+    max-width: 100%;
+    white-space: normal;
+  }
+
+  .player-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .player-info,
+  .player-actions {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .player-info {
+    flex-wrap: wrap;
+  }
+
+  .player-name {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .player-actions {
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
+  .player-actions .form-input {
+    width: 70px !important;
+    flex: 0 0 auto;
+  }
+
+  .team-header,
+  .team-player-row,
+  .gauge-header,
+  .player-list-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .team-badge-stats {
+    align-items: flex-start;
+  }
+
+  .team-player-left,
+  .team-player-name {
+    min-width: 0;
+  }
+
+  .team-player-name {
+    overflow-wrap: anywhere;
+  }
+
+  .pitch-container-outer {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .soccer-pitch {
+    min-width: 560px;
+  }
+
+  .toast {
+    left: 12px;
+    right: 12px;
+    bottom: 16px;
+    justify-content: center;
   }
 }
