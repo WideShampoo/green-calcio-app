@@ -272,7 +272,21 @@ function App() {
   };
 
   const toggleGoalkeeper = (id) => {
-    setPlayers(prev => prev.map(p => p.id === id ? { ...p, isGoalkeeper: !p.isGoalkeeper } : p));
+    setPlayers(prev => {
+      const player = prev.find(p => p.id === id);
+      if (!player) return prev;
+
+      const goalkeeperCount = prev.filter(p => p.isGoalkeeper).length;
+
+      if (!player.isGoalkeeper && goalkeeperCount >= 2) {
+        showToast("Puoi selezionare al massimo 2 portieri 🧤");
+        return prev;
+      }
+
+      return prev.map(p =>
+        p.id === id ? { ...p, isGoalkeeper: !p.isGoalkeeper } : p
+      );
+    });
   };
 
   const updatePlayerRating = (id, newRating) => {
@@ -321,6 +335,12 @@ function App() {
   // --- ALGORITMO DI BILANCIAMENTO SQUADRE (CON VINCOLI PORTIERI E BONUS) ---
   const handleGenerateTeams = () => {
     const availablePlayers = players.filter(p => p.available);
+    const availableGoalkeepers = availablePlayers.filter(p => p.isGoalkeeper).length;
+
+    if (availableGoalkeepers > 2) {
+      alert("Non puoi avere più di 2 portieri disponibili. Segna come assente o rimuovi il ruolo portiere da qualcuno.");
+      return;
+    }
     const required = matchSize * 2;
 
     if (availablePlayers.length !== required) {
