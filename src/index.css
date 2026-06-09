@@ -48,6 +48,35 @@ body {
   height: 8px;
 }
 
+.role-POR {
+  background: #f97316;
+}
+
+.role-DIF {
+  background: #3b82f6;
+}
+
+.role-CEN {
+  background: #10b981;
+}
+
+.role-ATT {
+  background: #ef4444;
+}
+
+.role-AUTO {
+  background: #94a3b8;
+}
+
+.pitch-jersey-badge {
+  min-width: 28px;
+  padding: 2px 5px;
+  border-radius: 999px;
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: #fff;
+}
+
 ::-webkit-scrollbar-track {
   background: var(--bg-darker);
 }
