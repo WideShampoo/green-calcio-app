@@ -1177,47 +1177,87 @@ const getRoleColor = (role) => {
   return '#94a3b8';
 };
   
-  const handleDownloadTacticalPreview = () => {
+  const handleDownloadTacticalPreview = async () => {
   if (!pitchTeamA || !pitchTeamB) return;
 
   const canvas = document.createElement('canvas');
-  canvas.width = 1400;
-  canvas.height = 850;
+  canvas.width = 1080;
+  canvas.height = 1600;
 
   const ctx = canvas.getContext('2d');
 
-  ctx.fillStyle = '#0b2418';
+  const loadImage = (src) => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
+  };
+
+  let vsLogo = null;
+
+  try {
+    vsLogo = await loadImage('/Dario_Rocchi.webp');
+  } catch (error) {
+    console.error('Errore caricamento immagine VS:', error);
+  }
+
+  const bgGrad = ctx.createRadialGradient(540, 780, 80, 540, 780, 900);
+  bgGrad.addColorStop(0, '#102d1d');
+  bgGrad.addColorStop(1, '#070a09');
+  ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 46px Outfit, Arial, sans-serif';
+  ctx.fillText('GREEN CALCIO', 540, 70);
+
+  ctx.fillStyle = '#10b981';
+  ctx.font = '600 20px Outfit, Arial, sans-serif';
+  ctx.fillText('ANTEPRIMA TATTICA • BLACK VS WHITE', 540, 105);
+
+  const pitchX = 90;
+  const pitchY = 155;
+  const pitchW = 900;
+  const pitchH = 1260;
+
+  ctx.fillStyle = 'rgba(16, 185, 129, 0.08)';
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
   ctx.lineWidth = 4;
-  ctx.strokeRect(60, 110, 1280, 620);
+  ctx.beginPath();
+  ctx.roundRect(pitchX, pitchY, pitchW, pitchH, 32);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
+  ctx.lineWidth = 3;
 
   ctx.beginPath();
-  ctx.moveTo(700, 110);
-  ctx.lineTo(700, 730);
+  ctx.moveTo(pitchX, pitchY + pitchH / 2);
+  ctx.lineTo(pitchX + pitchW, pitchY + pitchH / 2);
   ctx.stroke();
 
   ctx.beginPath();
-  ctx.arc(700, 420, 90, 0, Math.PI * 2);
+  ctx.arc(540, pitchY + pitchH / 2, 110, 0, Math.PI * 2);
   ctx.stroke();
+
+  ctx.strokeRect(310, pitchY, 460, 150);
+  ctx.strokeRect(310, pitchY + pitchH - 150, 460, 150);
 
   ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 42px Outfit, Arial, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('ANTEPRIMA TATTICA', 700, 60);
+  ctx.font = 'bold 30px Outfit, Arial, sans-serif';
+  ctx.fillText(pitchTeamA.name.toUpperCase(), 540, 150);
+  ctx.fillText(pitchTeamB.name.toUpperCase(), 540, 1450);
 
-  ctx.font = 'bold 28px Outfit, Arial, sans-serif';
-  ctx.fillText(pitchTeamA.name, 350, 95);
-  ctx.fillText(pitchTeamB.name, 1050, 95);
-
-  const drawPlayer = (player, x, y, line) => {
+  const drawPlayer = (player, x, y, line, darkText = false) => {
     const role = getPrimaryRoleForLine(player, line);
     const color = getRoleColor(role);
 
     ctx.fillStyle = color;
     ctx.beginPath();
-    ctx.arc(x, y, 34, 0, Math.PI * 2);
+    ctx.arc(x, y, 38, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.fillStyle = '#ffffff';
@@ -1225,39 +1265,62 @@ const getRoleColor = (role) => {
     ctx.textAlign = 'center';
     ctx.fillText(role, x, y + 6);
 
-    ctx.fillStyle = '#ffffff';
-    ctx.font = '600 18px Outfit, Arial, sans-serif';
+    ctx.fillStyle = darkText ? '#0f172a' : '#ffffff';
+    ctx.font = '700 18px Outfit, Arial, sans-serif';
 
     let name = player.name;
-    if (name.length > 14) name = name.slice(0, 12) + '...';
+    if (name.length > 13) name = name.slice(0, 11) + '...';
 
-    ctx.fillText(name, x, y + 58);
+    ctx.fillText(name, x, y + 62);
   };
 
-  const drawLine = (players, x, yStart, yGap, line) => {
-    players.forEach((player, index) => {
-      const totalHeight = (players.length - 1) * yGap;
-      const y = yStart - totalHeight / 2 + index * yGap;
-      drawPlayer(player, x, y, line);
+  const drawHorizontalLine = (players, y, line, reverse = false, darkText = false) => {
+    if (!players.length) return;
+
+    const spacing = 760 / Math.max(players.length, 1);
+    const startX = 540 - ((players.length - 1) * spacing) / 2;
+
+    const ordered = reverse ? [...players].reverse() : players;
+
+    ordered.forEach((player, index) => {
+      const x = startX + index * spacing;
+      drawPlayer(player, x, y, line, darkText);
     });
   };
 
-  const leftLines = getTacticalLines(pitchTeamA);
-  const rightLines = getTacticalLines(pitchTeamB);
+  const teamALines = getTacticalLines(pitchTeamA);
+  const teamBLines = getTacticalLines(pitchTeamB);
 
-  drawLine(leftLines.gk, 120, 420, 90, 'gk');
-  drawLine(leftLines.def, 270, 420, 120, 'def');
-  drawLine(leftLines.mid, 430, 420, 105, 'mid');
-  drawLine(leftLines.att, 600, 420, 100, 'att');
+  drawHorizontalLine(teamALines.gk, 250, 'gk');
+  drawHorizontalLine(teamALines.def, 395, 'def');
+  drawHorizontalLine(teamALines.mid, 545, 'mid');
+  drawHorizontalLine(teamALines.att, 690, 'att');
 
-  drawLine(rightLines.att, 800, 420, 100, 'att');
-  drawLine(rightLines.mid, 970, 420, 105, 'mid');
-  drawLine(rightLines.def, 1130, 420, 120, 'def');
-  drawLine(rightLines.gk, 1280, 420, 90, 'gk');
+  drawHorizontalLine(teamBLines.att, 880, 'att');
+  drawHorizontalLine(teamBLines.mid, 1030, 'mid');
+  drawHorizontalLine(teamBLines.def, 1180, 'def');
+  drawHorizontalLine(teamBLines.gk, 1325, 'gk');
 
-  ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 20px Outfit, Arial, sans-serif';
-  ctx.textAlign = 'center';
+  const vsX = 540;
+  const vsY = 785;
+  const vsRadius = 46;
+
+  if (vsLogo) {
+    const imgSize = 120;
+    ctx.drawImage(vsLogo, vsX - imgSize / 2, vsY - imgSize / 2 - 60, imgSize, imgSize);
+  }
+
+  ctx.fillStyle = '#070a09';
+  ctx.strokeStyle = '#10b981';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.arc(vsX, vsY, vsRadius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = '#10b981';
+  ctx.font = 'bold 28px Outfit, Arial, sans-serif';
+  ctx.fillText('VS', vsX, vsY + 10);
 
   const legend = [
     ['POR', '#f97316'],
@@ -1266,27 +1329,28 @@ const getRoleColor = (role) => {
     ['ATT', '#ef4444']
   ];
 
+  ctx.font = 'bold 18px Outfit, Arial, sans-serif';
   legend.forEach(([role, color], index) => {
-    const x = 500 + index * 140;
+    const x = 260 + index * 170;
     ctx.fillStyle = color;
     ctx.beginPath();
-    ctx.arc(x, 790, 14, 0, Math.PI * 2);
+    ctx.arc(x, 1530, 16, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.fillStyle = '#ffffff';
-    ctx.fillText(role, x + 45, 797);
+    ctx.fillText(role, x + 45, 1537);
   });
 
   canvas.toBlob((blob) => {
     if (!blob) return;
 
     const link = document.createElement('a');
-    link.download = 'anteprima-tattica.png';
+    link.download = 'anteprima-tattica-black-vs-white.png';
     link.href = URL.createObjectURL(blob);
     link.click();
     URL.revokeObjectURL(link.href);
 
-    showToast("Anteprima tattica scaricata! 📸");
+    showToast("Anteprima tattica scaricata! 📱");
   }, 'image/png');
 };
 
