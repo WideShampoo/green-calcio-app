@@ -841,7 +841,12 @@ try {
         ctx.fillStyle = '#ffffff';
         ctx.font = '600 19px Outfit, sans-serif';
         let nameTxt = p.name;
-        if (isGoalkeeperPlayer(p)) nameTxt += ' (GK)';
+
+const roles = getPlayerRoles(p);
+
+if (roles.length > 0) {
+  nameTxt += ` (${roles.join('/')})`;
+}
         ctx.fillText(nameTxt, 188, y + 3);
 
         // Rating
@@ -912,7 +917,12 @@ try {
         ctx.fillStyle = '#0f172a';
         ctx.font = '600 19px Outfit, sans-serif';
         let nameTxt = p.name;
-        if (isGoalkeeperPlayer(p)) nameTxt += ' (GK)';
+
+const roles = getPlayerRoles(p);
+
+if (roles.length > 0) {
+  nameTxt += ` (${roles.join('/')})`;
+}
         ctx.fillText(nameTxt, 728, y + 3);
 
         ctx.textAlign = 'right';
@@ -1016,7 +1026,12 @@ ctx.fillText('VS', vsX, vsY + vsRadius / 2 + 8);
           ctx.fillStyle = '#ffffff';
           ctx.font = '600 15px Outfit, sans-serif';
           let nameTxt = p.name;
-          if (isGoalkeeperPlayer(p)) nameTxt += ' (GK)';
+
+const roles = getPlayerRoles(p);
+
+if (roles.length > 0) {
+  nameTxt += ` (${roles.join('/')})`;
+}
           // Trunca se troppo lungo
           if (nameTxt.length > 13) nameTxt = nameTxt.substr(0, 11) + '...';
           ctx.fillText(nameTxt, startX + 60, y + 1);
