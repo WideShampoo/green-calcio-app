@@ -1192,6 +1192,55 @@ body {
   text-decoration: underline;
 }
 
+.pitch-half {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  align-items: center;
+  justify-items: center;
+}
+
+.pitch-player-node {
+  width: 78px;
+}
+
+/* Team sinistra: GK vicino porta, poi 2-3-1 verso il centro */
+.pitch-half-left .tactical-gk {
+  grid-column: 1;
+  grid-row: 2 / span 2;
+}
+
+.pitch-half-left .tactical-def {
+  grid-column: 2;
+}
+
+.pitch-half-left .tactical-mid {
+  grid-column: 3;
+}
+
+.pitch-half-left .tactical-att,
+.pitch-half-left .tactical-extra {
+  grid-column: 4;
+}
+
+/* Team destra: schema specchiato */
+.pitch-half-right .tactical-gk {
+  grid-column: 4;
+  grid-row: 2 / span 2;
+}
+
+.pitch-half-right .tactical-def {
+  grid-column: 3;
+}
+
+.pitch-half-right .tactical-mid {
+  grid-column: 2;
+}
+
+.pitch-half-right .tactical-att,
+.pitch-half-right .tactical-extra {
+  grid-column: 1;
+}
+
 /* --- ANIMAZIONI --- */
 @keyframes fadeInUp {
   from {
@@ -1373,4 +1422,95 @@ body {
     bottom: 16px;
     justify-content: center;
   }
+
+  .soccer-pitch {
+  min-width: 0;
+  width: 100%;
+  height: 760px;
+  flex-direction: column;
+  padding: 16px;
+}
+
+.soccer-pitch::before {
+  top: 50%;
+  bottom: auto;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  transform: translateY(-50%);
+}
+
+.soccer-pitch::after {
+  width: 90px;
+  height: 90px;
+}
+
+.penalty-area-left {
+  top: 0;
+  left: 50%;
+  width: 180px;
+  height: 70px;
+  transform: translateX(-50%);
+  border: 4px solid rgba(255, 255, 255, 0.4);
+  border-top: none;
+}
+
+.penalty-area-right {
+  bottom: 0;
+  top: auto;
+  left: 50%;
+  right: auto;
+  width: 180px;
+  height: 70px;
+  transform: translateX(-50%);
+  border: 4px solid rgba(255, 255, 255, 0.4);
+  border-bottom: none;
+}
+
+.pitch-half {
+  width: 100%;
+  height: 48%;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+}
+
+/* Smartphone: squadra sopra */
+.pitch-half-left .tactical-gk {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.pitch-half-left .tactical-def {
+  grid-row: 2;
+}
+
+.pitch-half-left .tactical-mid {
+  grid-row: 3;
+}
+
+.pitch-half-left .tactical-att,
+.pitch-half-left .tactical-extra {
+  grid-column: 2;
+  grid-row: 4;
+}
+
+/* Smartphone: squadra sotto, specchiata */
+.pitch-half-right .tactical-gk {
+  grid-column: 2;
+  grid-row: 4;
+}
+
+.pitch-half-right .tactical-def {
+  grid-row: 3;
+}
+
+.pitch-half-right .tactical-mid {
+  grid-row: 2;
+}
+
+.pitch-half-right .tactical-att,
+.pitch-half-right .tactical-extra {
+  grid-column: 2;
+  grid-row: 1;
+}
 }
