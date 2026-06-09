@@ -632,7 +632,7 @@ function App() {
   };
 
   // --- DOWNLOAD IMMAGINE FORMAZIONI (DYNAMIC CANVAS RENDER) ---
-  const handleDownloadImage = () => {
+  const handleDownloadImage = async () => {
     if (!teams || teams.length === 0) return;
 
     const canvas = document.createElement('canvas');
@@ -646,6 +646,22 @@ function App() {
     canvas.width = canvasWidth;
     canvas.height = canvasHeight;
     const ctx = canvas.getContext('2d');
+    const loadImage = (src) => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+};
+
+let vsLogo = null;
+
+try {
+  vsLogo = await loadImage('../assets/Dario_Rocchi.webp');
+} catch (error) {
+  console.error('Errore caricamento immagine VS:', error);
+}
 
     // 1. Sfondo - Sfumatura stadio notturno/lavagna tattica verde scuro
     const bgGrad = ctx.createRadialGradient(canvasWidth / 2, canvasHeight / 2, 50, canvasWidth / 2, canvasHeight / 2, canvasWidth);
@@ -825,18 +841,32 @@ function App() {
       });
 
       // C. Cerchio Centrale "VS"
-      ctx.textAlign = 'center';
-      ctx.fillStyle = '#070a09';
-      ctx.strokeStyle = '#10b981';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(600, 430, 36, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
+const vsX = 600;
+const vsY = 430;
+const vsRadius = 36;
 
-      ctx.fillStyle = '#10b981';
-      ctx.font = 'bold 22px Outfit, sans-serif';
-      ctx.fillText('VS', 600, 438);
+// Immagine sopra il bollino VS
+if (vsLogo) {
+  const imgSize = vsRadius * 2;
+  const imgX = vsX - imgSize / 2;
+  const imgY = vsY - imgSize / 2;
+
+  ctx.drawImage(vsLogo, imgX, imgY, imgSize, imgSize);
+}
+
+// Bollino VS sopra l'immagine, partendo circa da metà immagine
+ctx.textAlign = 'center';
+ctx.fillStyle = '#070a09';
+ctx.strokeStyle = '#10b981';
+ctx.lineWidth = 3;
+ctx.beginPath();
+ctx.arc(vsX, vsY + vsRadius / 2, vsRadius, 0, Math.PI * 2);
+ctx.fill();
+ctx.stroke();
+
+ctx.fillStyle = '#10b981';
+ctx.font = 'bold 22px Outfit, sans-serif';
+ctx.fillText('VS', vsX, vsY + vsRadius / 2 + 8);
 
       // Determine favored team based on lower odds
       if (t1Odds !== 'N/A' && t2Odds !== 'N/A') {
