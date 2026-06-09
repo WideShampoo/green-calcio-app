@@ -120,6 +120,17 @@ body {
   position: relative;
 }
 
+.player-name-with-roles {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.player-name-with-roles .player-name {
+  line-height: 1.1;
+}
+
 .logo-container {
   display: inline-flex;
   align-items: center;
