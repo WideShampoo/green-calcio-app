@@ -1157,6 +1157,139 @@ ctx.fillText('VS', vsX, vsY + vsRadius / 2 + 8);
   };
 };
 
+const getPrimaryRoleForLine = (player, line) => {
+  if (isGoalkeeperPlayer(player)) return 'POR';
+
+  const roles = getPlayerRoles(player);
+
+  if (line === 'att' && roles.includes('ATT')) return 'ATT';
+  if (line === 'mid' && roles.includes('CEN')) return 'CEN';
+  if (line === 'def' && roles.includes('DIF')) return 'DIF';
+
+  return roles[0] || 'AUTO';
+};
+
+const getRoleColor = (role) => {
+  if (role === 'POR') return '#f97316';
+  if (role === 'DIF') return '#3b82f6';
+  if (role === 'CEN') return '#10b981';
+  if (role === 'ATT') return '#ef4444';
+  return '#94a3b8';
+};
+  
+  const handleDownloadTacticalPreview = () => {
+  if (!pitchTeamA || !pitchTeamB) return;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 1400;
+  canvas.height = 850;
+
+  const ctx = canvas.getContext('2d');
+
+  ctx.fillStyle = '#0b2418';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+  ctx.lineWidth = 4;
+  ctx.strokeRect(60, 110, 1280, 620);
+
+  ctx.beginPath();
+  ctx.moveTo(700, 110);
+  ctx.lineTo(700, 730);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(700, 420, 90, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 42px Outfit, Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('ANTEPRIMA TATTICA', 700, 60);
+
+  ctx.font = 'bold 28px Outfit, Arial, sans-serif';
+  ctx.fillText(pitchTeamA.name, 350, 95);
+  ctx.fillText(pitchTeamB.name, 1050, 95);
+
+  const drawPlayer = (player, x, y, line) => {
+    const role = getPrimaryRoleForLine(player, line);
+    const color = getRoleColor(role);
+
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(x, y, 34, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 18px Outfit, Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(role, x, y + 6);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '600 18px Outfit, Arial, sans-serif';
+
+    let name = player.name;
+    if (name.length > 14) name = name.slice(0, 12) + '...';
+
+    ctx.fillText(name, x, y + 58);
+  };
+
+  const drawLine = (players, x, yStart, yGap, line) => {
+    players.forEach((player, index) => {
+      const totalHeight = (players.length - 1) * yGap;
+      const y = yStart - totalHeight / 2 + index * yGap;
+      drawPlayer(player, x, y, line);
+    });
+  };
+
+  const leftLines = getTacticalLines(pitchTeamA);
+  const rightLines = getTacticalLines(pitchTeamB);
+
+  drawLine(leftLines.gk, 120, 420, 90, 'gk');
+  drawLine(leftLines.def, 270, 420, 120, 'def');
+  drawLine(leftLines.mid, 430, 420, 105, 'mid');
+  drawLine(leftLines.att, 600, 420, 100, 'att');
+
+  drawLine(rightLines.att, 800, 420, 100, 'att');
+  drawLine(rightLines.mid, 970, 420, 105, 'mid');
+  drawLine(rightLines.def, 1130, 420, 120, 'def');
+  drawLine(rightLines.gk, 1280, 420, 90, 'gk');
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 20px Outfit, Arial, sans-serif';
+  ctx.textAlign = 'center';
+
+  const legend = [
+    ['POR', '#f97316'],
+    ['DIF', '#3b82f6'],
+    ['CEN', '#10b981'],
+    ['ATT', '#ef4444']
+  ];
+
+  legend.forEach(([role, color], index) => {
+    const x = 500 + index * 140;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(x, 790, 14, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(role, x + 45, 797);
+  });
+
+  canvas.toBlob((blob) => {
+    if (!blob) return;
+
+    const link = document.createElement('a');
+    link.download = 'anteprima-tattica.png';
+    link.href = URL.createObjectURL(blob);
+    link.click();
+    URL.revokeObjectURL(link.href);
+
+    showToast("Anteprima tattica scaricata! 📸");
+  }, 'image/png');
+};
+
   return (
     <div className="app-container">
       {/* Toast Notification */}
@@ -1585,6 +1718,13 @@ ctx.fillText('VS', vsX, vsY + vsRadius / 2 + 8);
 
           <div className="glass-card">
             <div className="results-header">
+              <button
+  type="button"
+  className="btn btn-secondary"
+  onClick={handleDownloadTacticalPreview}
+>
+  <IconDownload /> Scarica Anteprima
+</button>
               <h2 className="card-title" style={{ margin: 0, border: 'none', padding: 0 }}>
                 Squadre Generate
               </h2>
@@ -1770,7 +1910,9 @@ ctx.fillText('VS', vsX, vsY + vsRadius / 2 + 8);
           >
             <div className={`pitch-jersey pitch-jersey-${teamColorIndex} ${isGoalkeeperPlayer(player) ? 'gk-jersey' : ''}`}>
               {isGoalkeeperPlayer(player) ? '🧤' : pIdx + 1}
-              <span className="pitch-jersey-badge">{player.rating.toFixed(0)}</span>
+              <span className={`pitch-jersey-badge role-${getPrimaryRoleForLine(player, line)}`}>
+  {getPrimaryRoleForLine(player, line)}
+</span>
             </div>
             <span className="pitch-player-name" title={player.name}>
               {player.name}
