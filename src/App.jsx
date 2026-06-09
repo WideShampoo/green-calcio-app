@@ -849,7 +849,7 @@ const vsRadius = 36;
 if (vsLogo) {
   const imgSize = vsRadius * 2;
   const imgX = vsX - imgSize / 2;
-  const imgY = vsY - imgSize / 2 - 30;
+  const imgY = vsY - imgSize / 2 - 45;
 
   ctx.drawImage(vsLogo, imgX, imgY, imgSize, imgSize);
 }
