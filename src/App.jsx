@@ -1382,12 +1382,6 @@ ctx.fillText('VS', vsX, vsY + vsRadius / 2 + 8);
     })}
   </div>
 </div>
-
-                        <span className="player-name">
-                          {player.name}
-                          <span style={{ color: '#f97316', fontSize: '0.75rem', fontWeight: 600, marginLeft: '6px' }}>
-  ({getRoleLabel(player)})
-</span>
                         </span>
                       </div>
 
