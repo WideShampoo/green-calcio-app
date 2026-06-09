@@ -989,6 +989,26 @@ function App() {
     return teams.find(t => t.id === pitchTeamBId) || null;
   }, [teams, pitchTeamBId]);
 
+  const getTacticalPlayers = (team) => {
+  if (!team) return [];
+
+  const players = [...team.players];
+
+  const goalkeeper =
+    players.find(p => p.isGoalkeeper) ||
+    [...players].sort((a, b) => a.rating - b.rating)[0];
+
+  const fieldPlayers = players.filter(p => p.id !== goalkeeper.id);
+
+  return [
+    { ...goalkeeper, tacticalRole: 'gk' },
+    ...fieldPlayers.slice(0, 2).map(p => ({ ...p, tacticalRole: 'def' })),
+    ...fieldPlayers.slice(2, 5).map(p => ({ ...p, tacticalRole: 'mid' })),
+    ...fieldPlayers.slice(5, 6).map(p => ({ ...p, tacticalRole: 'att' })),
+    ...fieldPlayers.slice(6).map(p => ({ ...p, tacticalRole: 'extra' }))
+  ];
+};
+  
   // Badge color helper
   const getRatingBadgeClass = (rating) => {
     if (rating >= 8.0) return 'rating-high';
@@ -1568,7 +1588,7 @@ function App() {
                 <div className="pitch-half pitch-half-left">
                   {pitchTeamA ? (
                     // Ordina mettendo i portieri per primi (verranno renderizzati in porta o in alto a sinistra)
-                    [...pitchTeamA.players].sort((a, b) => (b.isGoalkeeper ? 1 : 0) - (a.isGoalkeeper ? 1 : 0)).map((player) => {
+                    getTacticalPlayers(pitchTeamA).map((player) => {
                       const pIdx = pitchTeamA.players.indexOf(player);
                       const isSelected = selectedPlayerForSwap &&
                         selectedPlayerForSwap.teamId === pitchTeamA.id &&
@@ -1578,7 +1598,7 @@ function App() {
                       return (
                         <div
                           key={player.id}
-                          className={`pitch-player-node ${isSelected ? 'selected' : ''}`}
+                          className={`pitch-player-node tactical-${player.tacticalRole} ${isSelected ? 'selected' : ''}`}
                           onClick={() => handleSelectForSwap(pitchTeamA.id, pIdx)}
                           style={{ cursor: 'pointer' }}
                         >
@@ -1600,7 +1620,7 @@ function App() {
                 {/* Metà campo destra: Team B */}
                 <div className="pitch-half pitch-half-right">
                   {pitchTeamB ? (
-                    [...pitchTeamB.players].sort((a, b) => (b.isGoalkeeper ? 1 : 0) - (a.isGoalkeeper ? 1 : 0)).map((player) => {
+                    getTacticalPlayers(pitchTeamB).map((player) => {
                       const pIdx = pitchTeamB.players.indexOf(player);
                       const isSelected = selectedPlayerForSwap &&
                         selectedPlayerForSwap.teamId === pitchTeamB.id &&
@@ -1610,7 +1630,7 @@ function App() {
                       return (
                         <div
                           key={player.id}
-                          className={`pitch-player-node ${isSelected ? 'selected' : ''}`}
+                          className={`pitch-player-node tactical-${player.tacticalRole} ${isSelected ? 'selected' : ''}`}
                           onClick={() => handleSelectForSwap(pitchTeamB.id, pIdx)}
                           style={{ cursor: 'pointer' }}
                         >
