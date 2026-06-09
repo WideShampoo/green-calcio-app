@@ -136,7 +136,7 @@ const SAMPLE_PLAYERS = [
   { name: 'Eros', rating: 6, roles: ['ATT'] },
   { name: 'Andrea', rating: 6, roles: ['DIF'] },
   { name: 'Pierluigi', rating: 6,roles: ['DIF','CEN'] },
-  { name: 'Albu', rating: 6, roles: ['POR']},
+  { name: 'Albi', rating: 6, roles: ['POR']},
   { name: 'Angelo', rating: 6, roles: ['DIF', 'CEN']},
   { name: 'Steccio', rating: 6, roles: ['CEN'] }
 ];
