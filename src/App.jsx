@@ -843,7 +843,6 @@ try {
         let nameTxt = p.name;
 ctx.fillText(nameTxt, 188, y + 3);
 drawRolePills(ctx, getPlayerRoles(p), 188 + ctx.measureText(nameTxt).width + 10, y - 13);
-        ctx.fillText(nameTxt, 188, y + 3);
 
         // Rating
         ctx.textAlign = 'right';
