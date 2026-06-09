@@ -1782,6 +1782,7 @@ const getRoleColor = (role) => {
 
           <div className="glass-card">
             <div className="results-header">
+               {/*
               <button
   type="button"
   className="btn btn-secondary"
@@ -1789,6 +1790,7 @@ const getRoleColor = (role) => {
 >
   <IconDownload /> Scarica Anteprima
 </button>
+              */}
               <h2 className="card-title" style={{ margin: 0, border: 'none', padding: 0 }}>
                 Squadre Generate
               </h2>
