@@ -841,12 +841,8 @@ try {
         ctx.fillStyle = '#ffffff';
         ctx.font = '600 19px Outfit, sans-serif';
         let nameTxt = p.name;
-
-const roles = getPlayerRoles(p);
-
-if (roles.length > 0) {
-  nameTxt += ` (${roles.join('/')})`;
-}
+ctx.fillText(nameTxt, 728, y + 3);
+drawRolePills(ctx, getPlayerRoles(p), 728 + ctx.measureText(nameTxt).width + 10, y - 13);
         ctx.fillText(nameTxt, 188, y + 3);
 
         // Rating
@@ -917,13 +913,10 @@ if (roles.length > 0) {
         ctx.fillStyle = '#0f172a';
         ctx.font = '600 19px Outfit, sans-serif';
         let nameTxt = p.name;
+if (nameTxt.length > 11) nameTxt = nameTxt.substr(0, 9) + '...';
 
-const roles = getPlayerRoles(p);
-
-if (roles.length > 0) {
-  nameTxt += ` (${roles.join('/')})`;
-}
-        ctx.fillText(nameTxt, 728, y + 3);
+ctx.fillText(nameTxt, startX + 60, y + 1);
+drawRolePills(ctx, getPlayerRoles(p), startX + 60, y + 10);
 
         ctx.textAlign = 'right';
         ctx.font = 'bold 19px Outfit, sans-serif';
@@ -1026,12 +1019,8 @@ ctx.fillText('VS', vsX, vsY + vsRadius / 2 + 8);
           ctx.fillStyle = '#ffffff';
           ctx.font = '600 15px Outfit, sans-serif';
           let nameTxt = p.name;
-
-const roles = getPlayerRoles(p);
-
-if (roles.length > 0) {
-  nameTxt += ` (${roles.join('/')})`;
-}
+ctx.fillText(nameTxt, 188, y + 3);
+drawRolePills(ctx, getPlayerRoles(p), 188 + ctx.measureText(nameTxt).width + 10, y - 13);
           // Trunca se troppo lungo
           if (nameTxt.length > 13) nameTxt = nameTxt.substr(0, 11) + '...';
           ctx.fillText(nameTxt, startX + 60, y + 1);
@@ -1367,6 +1356,30 @@ const getRoleColor = (role) => {
 
     showToast("Anteprima tattica scaricata! 📱");
   }, 'image/png');
+};
+
+  const drawRolePills = (ctx, roles, x, y, textColor = '#ffffff') => {
+  if (!roles || roles.length === 0) return;
+
+  let offsetX = x;
+
+  roles.forEach(role => {
+    const color = getRoleColor(role);
+    const pillW = 38;
+    const pillH = 18;
+
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.roundRect(offsetX, y, pillW, pillH, 8);
+    ctx.fill();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 10px Outfit, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(role, offsetX + pillW / 2, y + 13);
+
+    offsetX += pillW + 5;
+  });
 };
 
   return (
