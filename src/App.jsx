@@ -658,7 +658,7 @@ function App() {
 let vsLogo = null;
 
 try {
-  vsLogo = await loadImage('../assets/Dario_Rocchi.webp');
+  vsLogo = await loadImage('/assets/Dario_Rocchi.webp');
 } catch (error) {
   console.error('Errore caricamento immagine VS:', error);
 }
