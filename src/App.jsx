@@ -81,22 +81,64 @@ const IconDownload = () => (
   </svg>
 );
 
+const PLAYER_ROLES = ['POR', 'DIF', 'CEN', 'ATT'];
+
+const normalizeRoles = (roles = [], isGoalkeeper = false) => {
+  if (isGoalkeeper) return ['POR'];
+
+  const clean = [...new Set(
+    roles
+      .map(r => String(r).toUpperCase().trim())
+      .filter(r => PLAYER_ROLES.includes(r))
+  )];
+
+  if (clean.includes('POR')) return ['POR'];
+  return clean;
+};
+
+const isGoalkeeperPlayer = (player) =>
+  normalizeRoles(player.roles, isGoalkeeperPlayer(player)).includes('POR');
+
+const getPlayerRoles = (player) =>
+  normalizeRoles(player.roles, isGoalkeeperPlayer(player));
+
+const getRoleLabel = (player) => {
+  const roles = getPlayerRoles(player);
+  return roles.length ? roles.join('/') : 'AUTO';
+};
+
+const togglePlayerRole = (roles = [], role) => {
+  const current = normalizeRoles(roles);
+
+  if (role === 'POR') {
+    return current.includes('POR') ? [] : ['POR'];
+  }
+
+  const withoutPor = current.filter(r => r !== 'POR');
+
+  if (withoutPor.includes(role)) {
+    return withoutPor.filter(r => r !== role);
+  }
+
+  return [...withoutPor, role];
+};
+
 // --- LISTA GIOCATORI DI PROVA INIZIALE - 14 GIOCATORI PER MATCH 7 vs 7 ---
 const SAMPLE_PLAYERS = [
-  { name: 'Alessandro', rating: 9 },
-  { name: 'Luca', rating: 8 },
-  { name: 'Francesco', rating: 8 },
-  { name: 'Federico', rating: 9.5 },
-  { name: 'Matteo', rating: 7 },
-  { name: 'Marco', rating: 7 },
+  { name: 'Alessandro', rating: 9, roles: ['ATT'] },
+  { name: 'Luca', rating: 8, roles: ['CEN'] },
+  { name: 'Francesco', rating: 8, roles: ['DIF'] },
+  { name: 'Federico', rating: 9.5, roles: ['ATT', 'CEN'] },
+  { name: 'Matteo', rating: 7, roles: ['DIF'] },
+  { name: 'Marco', rating: 7, roles: ['CEN'] },
   { name: 'Giovanni', rating: 6 },
   { name: 'Lorenzo', rating: 6 },
-  { name: 'Gabriele', rating: 7.5 },
-  { name: 'Andrea', rating: 6.5 },
+  { name: 'Gabriele', rating: 7.5, roles: ['ATT'] },
+  { name: 'Andrea', rating: 6.5, roles: ['DIF', 'CEN'] },
   { name: 'Simone', rating: 7 },
   { name: 'Filippo', rating: 6 },
-  { name: 'Christian', rating: 5.5, isGoalkeeper: true },
-  { name: 'Davide', rating: 5.5, isGoalkeeper: true }
+  { name: 'Christian', rating: 5.5, roles: ['POR'] },
+  { name: 'Davide', rating: 5.5, roles: ['POR'] }
 ];
 
 function App() {
@@ -116,6 +158,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('singolo'); // 'singolo' | 'massivo'
   const [singleName, setSingleName] = useState('');
   const [singleRating, setSingleRating] = useState(7.0);
+  const [singleRoles, setSingleRoles] = useState([]);
   const [bulkText, setBulkText] = useState('');
   const numTeams = 2; // Sempre 2 squadre
   const [matchSize, setMatchSize] = useState(() => {
@@ -168,8 +211,8 @@ function App() {
   const stats = useMemo(() => {
     const total = players.length;
     const available = players.filter(p => p.available).length;
-    const gksAvailable = players.filter(p => p.available && p.isGoalkeeper).length;
-    const regularsAvailable = players.filter(p => p.available && !p.isGoalkeeper).length;
+    const gksAvailable = players.filter(p => p.available && isGoalkeeperPlayer(p)).length;
+const regularsAvailable = players.filter(p => p.available && !isGoalkeeperPlayer(p)).length;
 
     const sumRatings = players.reduce((sum, p) => sum + p.rating, 0);
     const avgRating = total > 0 ? (sumRatings / total).toFixed(1) : '0.0';
@@ -197,97 +240,117 @@ function App() {
 
   // --- GESTIONE LISTA ---
   const handleAddSingle = (e) => {
-    e.preventDefault();
-    const name = singleName.trim();
-    if (!name) return;
+  e.preventDefault();
+  const name = singleName.trim();
+  if (!name) return;
 
-    const newPlayer = {
-      id: `player-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-      name: name,
-      rating: parseFloat(singleRating),
-      available: true,
-      isGoalkeeper: false
-    };
-
-    setPlayers(prev => [newPlayer, ...prev]);
-    setSingleName('');
-    setSingleRating(7.0);
-    showToast(`Giocatore ${name} aggiunto con successo!`);
+  const newPlayer = {
+    id: `player-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+    name,
+    rating: parseFloat(singleRating),
+    available: true,
+    roles: normalizeRoles(singleRoles)
   };
+
+  setPlayers(prev => [newPlayer, ...prev]);
+  setSingleName('');
+  setSingleRating(7.0);
+  setSingleRoles([]);
+  showToast(`Giocatore ${name} aggiunto con successo!`);
+};
 
   const handleAddBulk = (e) => {
-    e.preventDefault();
-    if (!bulkText.trim()) return;
+  e.preventDefault();
+  if (!bulkText.trim()) return;
 
-    const lines = bulkText.split('\n');
-    const newPlayers = [];
+  const lines = bulkText.split('\n');
+  const newPlayers = [];
 
-    lines.forEach(line => {
-      const trimmed = line.trim();
-      if (!trimmed) return;
+  lines.forEach(line => {
+    const trimmed = line.trim();
+    if (!trimmed) return;
 
-      let rating = 7.0;
-      let name = trimmed;
+    let rating = 7.0;
+    let name = trimmed;
+    let roles = [];
 
-      // Prova a trovare il voto alla fine della riga: "Luca 8.5", "Marco - 7", "Giovanni (6.0)"
-      const ratingAtEnd = trimmed.match(/^(.+?)\s*[:\-–—]*\s*\(?(\d{1,2}(?:[.,]\d+)?)\)?\s*$/);
-      // Prova a trovare il voto all'inizio della riga: "9 Alessandro"
-      const ratingAtStart = trimmed.match(/^(\d{1,2}(?:[.,]\d+)?)\s+(.+)$/);
+    const roleMatch = name.match(/\((POR|DIF|CEN|ATT)(?:\s*[,/]\s*(POR|DIF|CEN|ATT))*\)/gi);
 
-      if (ratingAtEnd) {
-        const parsedRating = parseFloat(ratingAtEnd[2].replace(',', '.'));
-        if (parsedRating >= 1 && parsedRating <= 10) {
-          name = ratingAtEnd[1].replace(/[:\-–—()]/g, '').trim();
-          rating = parsedRating;
-        }
-      } else if (ratingAtStart) {
-        const parsedRating = parseFloat(ratingAtStart[1].replace(',', '.'));
-        if (parsedRating >= 1 && parsedRating <= 10) {
-          name = ratingAtStart[2].trim();
-          rating = parsedRating;
-        }
-      }
+    if (roleMatch) {
+      const lastRoleGroup = roleMatch[roleMatch.length - 1];
+      roles = normalizeRoles(
+        lastRoleGroup
+          .replace(/[()]/g, '')
+          .split(/[,/]/)
+          .map(r => r.trim())
+      );
 
-      name = name.replace(/\s+/g, ' ');
-      if (!name) name = `Giocatore ${newPlayers.length + 1}`;
-
-      newPlayers.push({
-        id: `player-${Date.now()}-${Math.random().toString(36).substr(2, 5)}-${Math.random().toString(36).substr(2, 5)}`,
-        name: name,
-        rating: Math.max(1, Math.min(10, rating)),
-        available: true,
-        isGoalkeeper: false
-      });
-    });
-
-    if (newPlayers.length > 0) {
-      setPlayers(prev => [...newPlayers, ...prev]);
-      setBulkText('');
-      showToast(`Aggiunti ${newPlayers.length} giocatori!`);
+      name = name.replace(lastRoleGroup, '').trim();
     }
-  };
+
+    const ratingAtEnd = name.match(/^(.+?)\s*[:\-–—]*\s*\(?(\d{1,2}(?:[.,]\d+)?)\)?\s*$/);
+    const ratingAtStart = name.match(/^(\d{1,2}(?:[.,]\d+)?)\s+(.+)$/);
+
+    if (ratingAtEnd) {
+      const parsedRating = parseFloat(ratingAtEnd[2].replace(',', '.'));
+      if (parsedRating >= 1 && parsedRating <= 10) {
+        name = ratingAtEnd[1].replace(/[:\-–—()]/g, '').trim();
+        rating = parsedRating;
+      }
+    } else if (ratingAtStart) {
+      const parsedRating = parseFloat(ratingAtStart[1].replace(',', '.'));
+      if (parsedRating >= 1 && parsedRating <= 10) {
+        name = ratingAtStart[2].trim();
+        rating = parsedRating;
+      }
+    }
+
+    name = name.replace(/\s+/g, ' ');
+    if (!name) name = `Giocatore ${newPlayers.length + 1}`;
+
+    newPlayers.push({
+      id: `player-${Date.now()}-${Math.random().toString(36).substr(2, 5)}-${Math.random().toString(36).substr(2, 5)}`,
+      name,
+      rating: Math.max(1, Math.min(10, rating)),
+      available: true,
+      roles
+    });
+  });
+
+  if (newPlayers.length > 0) {
+    setPlayers(prev => [...newPlayers, ...prev]);
+    setBulkText('');
+    showToast(`Aggiunti ${newPlayers.length} giocatori!`);
+  }
+};
 
   const toggleAvailability = (id) => {
     setPlayers(prev => prev.map(p => p.id === id ? { ...p, available: !p.available } : p));
   };
 
-  const toggleGoalkeeper = (id) => {
-    setPlayers(prev => {
-      const player = prev.find(p => p.id === id);
-      if (!player) return prev;
+  const toggleRole = (id, role) => {
+  setPlayers(prev => {
+    const player = prev.find(p => p.id === id);
+    if (!player) return prev;
 
-      const goalkeeperCount = prev.filter(p => p.isGoalkeeper).length;
+    const nextRoles = togglePlayerRole(getPlayerRoles(player), role);
 
-      if (!player.isGoalkeeper && goalkeeperCount >= 2) {
+    if (role === 'POR' && nextRoles.includes('POR')) {
+      const goalkeeperCount = prev.filter(p => p.id !== id && isGoalkeeperPlayer(p)).length;
+
+      if (goalkeeperCount >= 2) {
         showToast("Puoi selezionare al massimo 2 portieri 🧤");
         return prev;
       }
+    }
 
-      return prev.map(p =>
-        p.id === id ? { ...p, isGoalkeeper: !p.isGoalkeeper } : p
-      );
-    });
-  };
+    return prev.map(p =>
+      p.id === id
+        ? { ...p, roles: nextRoles, isGoalkeeper: nextRoles.includes('POR') }
+        : p
+    );
+  });
+};
 
   const updatePlayerRating = (id, newRating) => {
     const val = Math.max(1, Math.min(10, parseFloat(newRating)));
@@ -311,31 +374,33 @@ function App() {
   };
 
   const loadSamplePlayers = () => {
-    if (window.confirm("Vuoi caricare la lista di giocatori di prova (14 giocatori)? Questa azione sovrascriverà la lista corrente.")) {
-      const formatted = SAMPLE_PLAYERS.map((p, idx) => ({
-        id: `sample-${idx}-${Date.now()}`,
-        name: p.name,
-        rating: p.rating,
-        available: true,
-        isGoalkeeper: p.isGoalkeeper || false
-      }));
-      setPlayers(formatted);
-      setTeams([]);
-      showToast("Caricati 14 giocatori di prova");
-    }
-  };
+  if (window.confirm("Vuoi caricare la lista di giocatori di prova (14 giocatori)? Questa azione sovrascriverà la lista corrente.")) {
+    const formatted = SAMPLE_PLAYERS.map((p, idx) => ({
+      id: `sample-${idx}-${Date.now()}`,
+      name: p.name,
+      rating: p.rating,
+      available: true,
+      roles: normalizeRoles(p.roles, isGoalkeeperPlayer(p)),
+      isGoalkeeper: normalizeRoles(p.roles, isGoalkeeperPlayer(p)).includes('POR')
+    }));
+
+    setPlayers(formatted);
+    setTeams([]);
+    showToast("Caricati 14 giocatori di prova");
+  }
+};
 
   // --- CALCOLO SOMMA RATING CON BONUS PORTIERE +2 ---
   const getTeamRatingSum = (teamPlayers) => {
-    const baseSum = teamPlayers.reduce((sum, p) => sum + p.rating, 0);
-    const gkCount = teamPlayers.filter(p => p.isGoalkeeper).length;
-    return baseSum + gkCount * 2; // Ogni portiere aggiunge +2 bonus
-  };
+  const baseSum = teamPlayers.reduce((sum, p) => sum + p.rating, 0);
+  const gkCount = teamPlayers.filter(p => isGoalkeeperPlayer(p)).length;
+  return baseSum + gkCount * 2;
+};
 
   // --- ALGORITMO DI BILANCIAMENTO SQUADRE (CON VINCOLI PORTIERI E BONUS) ---
   const handleGenerateTeams = () => {
     const availablePlayers = players.filter(p => p.available);
-    const availableGoalkeepers = availablePlayers.filter(p => p.isGoalkeeper).length;
+    const availableGoalkeepers = availablePlayers.filter(p => isGoalkeeperPlayer(p)).length;
 
     if (availableGoalkeepers > 2) {
       alert("Non puoi avere più di 2 portieri disponibili. Segna come assente o rimuovi il ruolo portiere da qualcuno.");
@@ -372,8 +437,8 @@ function App() {
       });
 
       // Separa portieri e giocatori di movimento, mescola l'ordine
-      const gks = availablePlayers.filter(p => p.isGoalkeeper).sort(() => Math.random() - 0.5);
-      const regulars = availablePlayers.filter(p => !p.isGoalkeeper).sort(() => Math.random() - 0.5);
+      const gks = availablePlayers.filter(p => isGoalkeeperPlayer(p)).sort(() => Math.random() - 0.5);
+const regulars = availablePlayers.filter(p => !isGoalkeeperPlayer(p)).sort(() => Math.random() - 0.5);
 
       // Ordina decrescente con perturbazione per parità di voto
       gks.sort((a, b) => {
@@ -397,8 +462,8 @@ function App() {
 
         // Ordina per numero di portieri decrescente (preferisci chi ne ha meno) e poi per somma rating
         eligible.sort((a, b) => {
-          const gkCountA = a.players.filter(p => p.isGoalkeeper).length;
-          const gkCountB = b.players.filter(p => p.isGoalkeeper).length;
+          const gkCountA = a.players.filter(p => isGoalkeeperPlayer(p)).length;
+          const gkCountB = b.players.filter(p => isGoalkeeperPlayer(p)).length;
           if (gkCountA !== gkCountB) {
             return gkCountA - gkCountB;
           }
@@ -485,7 +550,7 @@ function App() {
                 const player = teamA.players[pIdx];
 
                 // Non spostare i portieri per mantenere fisso il loro numero per squadra
-                if (player.isGoalkeeper) continue;
+                if (isGoalkeeperPlayer(player)) continue;
 
                 const currentDiff = Math.abs(teamA.ratingSum - teamB.ratingSum);
 
@@ -518,7 +583,25 @@ function App() {
       const avg = sums.reduce((a, b) => a + b, 0) / numTeams;
       const stdDev = Math.sqrt(sums.reduce((acc, s) => acc + Math.pow(s - avg, 2), 0) / numTeams);
 
-      const trialScore = range * 15 + stdDev;
+
+      const rolePenalty = localTeams.reduce((penalty, team) => {
+  const playersWithoutGk = team.players.filter(p => !isGoalkeeperPlayer(p));
+
+  const roleCounts = {
+    DIF: playersWithoutGk.filter(p => getPlayerRoles(p).includes('DIF')).length,
+    CEN: playersWithoutGk.filter(p => getPlayerRoles(p).includes('CEN')).length,
+    ATT: playersWithoutGk.filter(p => getPlayerRoles(p).includes('ATT')).length
+  };
+
+  const missingDif = Math.max(0, 1 - roleCounts.DIF);
+  const missingCen = Math.max(0, 1 - roleCounts.CEN);
+  const missingAtt = Math.max(0, 1 - roleCounts.ATT);
+
+  return penalty + missingDif + missingCen + missingAtt;
+}, 0);
+
+      
+      const trialScore = range * 15 + stdDev + rolePenalty * 8;
 
       if (trialScore < bestScore) {
         bestScore = trialScore;
@@ -610,7 +693,7 @@ function App() {
       text += `${emoji} *${t.name.toUpperCase()}* (Media: ${avg} • Tot con Bonus: ${t.ratingSum.toFixed(1)})\n`;
 
       t.players.forEach((p, pIdx) => {
-        text += `${pIdx + 1}. ${p.name}${p.isGoalkeeper ? ' 🧤' : ''}\n`;
+        text += `${pIdx + 1}. ${p.name}${isGoalkeeperPlayer(p) ? ' 🧤' : ''}\n`;
       });
       text += `\n`;
     });
@@ -735,7 +818,7 @@ try {
         }
 
         // Jersey / Ruolo
-        if (p.isGoalkeeper) {
+        if (isGoalkeeperPlayer(p)) {
           ctx.fillStyle = 'rgba(249, 115, 22, 0.2)';
           ctx.beginPath();
           ctx.arc(155, y - 4, 16, 0, Math.PI * 2);
@@ -758,7 +841,7 @@ try {
         ctx.fillStyle = '#ffffff';
         ctx.font = '600 19px Outfit, sans-serif';
         let nameTxt = p.name;
-        if (p.isGoalkeeper) nameTxt += ' (GK)';
+        if (isGoalkeeperPlayer(p)) nameTxt += ' (GK)';
         ctx.fillText(nameTxt, 188, y + 3);
 
         // Rating
@@ -807,7 +890,7 @@ try {
           ctx.fill();
         }
 
-        if (p.isGoalkeeper) {
+        if (isGoalkeeperPlayer(p)) {
           ctx.fillStyle = 'rgba(249, 115, 22, 0.2)';
           ctx.beginPath();
           ctx.arc(695, y - 4, 16, 0, Math.PI * 2);
@@ -829,7 +912,7 @@ try {
         ctx.fillStyle = '#0f172a';
         ctx.font = '600 19px Outfit, sans-serif';
         let nameTxt = p.name;
-        if (p.isGoalkeeper) nameTxt += ' (GK)';
+        if (isGoalkeeperPlayer(p)) nameTxt += ' (GK)';
         ctx.fillText(nameTxt, 728, y + 3);
 
         ctx.textAlign = 'right';
@@ -911,7 +994,7 @@ ctx.fillText('VS', vsX, vsY + vsRadius / 2 + 8);
         t.players.forEach((p, idx) => {
           const y = 260 + idx * 50;
 
-          if (p.isGoalkeeper) {
+          if (isGoalkeeperPlayer(p)) {
             ctx.fillStyle = 'rgba(249, 115, 22, 0.2)';
             ctx.beginPath();
             ctx.arc(startX + 35, y - 4, 14, 0, Math.PI * 2);
@@ -933,7 +1016,7 @@ ctx.fillText('VS', vsX, vsY + vsRadius / 2 + 8);
           ctx.fillStyle = '#ffffff';
           ctx.font = '600 15px Outfit, sans-serif';
           let nameTxt = p.name;
-          if (p.isGoalkeeper) nameTxt += ' (GK)';
+          if (isGoalkeeperPlayer(p)) nameTxt += ' (GK)';
           // Trunca se troppo lungo
           if (nameTxt.length > 13) nameTxt = nameTxt.substr(0, 11) + '...';
           ctx.fillText(nameTxt, startX + 60, y + 1);
@@ -1025,25 +1108,50 @@ ctx.fillText('VS', vsX, vsY + vsRadius / 2 + 8);
   const players = [...team.players];
 
   const goalkeeper =
-    players.find(p => p.isGoalkeeper) ||
+    players.find(p => isGoalkeeperPlayer(p)) ||
     [...players].sort((a, b) => a.rating - b.rating)[0];
 
   const fieldPlayers = players.filter(p => p.id !== goalkeeper.id);
 
+  const pickForLine = (available, role, count) => {
+    const preferred = available
+      .filter(p => getPlayerRoles(p).includes(role))
+      .sort((a, b) => b.rating - a.rating);
+
+    const picked = preferred.slice(0, count);
+    const pickedIds = new Set(picked.map(p => p.id));
+
+    const remainingSlots = count - picked.length;
+
+    if (remainingSlots > 0) {
+      const fallback = available
+        .filter(p => !pickedIds.has(p.id))
+        .sort((a, b) => b.rating - a.rating)
+        .slice(0, remainingSlots);
+
+      picked.push(...fallback);
+    }
+
+    return picked;
+  };
+
+  let remaining = [...fieldPlayers];
+
+  const def = pickForLine(remaining, 'DIF', matchSize === 5 ? 1 : 2);
+  remaining = remaining.filter(p => !def.some(x => x.id === p.id));
+
+  const mid = pickForLine(remaining, 'CEN', matchSize === 5 ? 2 : 3);
+  remaining = remaining.filter(p => !mid.some(x => x.id === p.id));
+
+  const att = pickForLine(remaining, 'ATT', fieldPlayers.length - def.length - mid.length);
+
   return {
-    gk: [goalkeeper],
-    def: fieldPlayers.slice(0, 2),
-    mid: fieldPlayers.slice(2, 5),
-    att: fieldPlayers.slice(5)
+    gk: goalkeeper ? [goalkeeper] : [],
+    def,
+    mid,
+    att
   };
 };
-  
-  // Badge color helper
-  const getRatingBadgeClass = (rating) => {
-    if (rating >= 8.0) return 'rating-high';
-    if (rating >= 6.0) return 'rating-medium';
-    return 'rating-low';
-  };
 
   return (
     <div className="app-container">
@@ -1129,6 +1237,24 @@ ctx.fillText('VS', vsX, vsY + vsRadius / 2 + 8);
                     />
                     <span className="rating-display">{singleRating.toFixed(1)}</span>
                   </div>
+                  <div className="form-group">
+  <label className="form-label">Ruolo</label>
+  <div className="role-selector">
+    {PLAYER_ROLES.map(role => (
+      <button
+        key={role}
+        type="button"
+        className={`role-chip ${singleRoles.includes(role) ? 'active' : ''}`}
+        onClick={() => setSingleRoles(prev => togglePlayerRole(prev, role))}
+      >
+        {role}
+      </button>
+    ))}
+  </div>
+  <div className="gauge-info-text">
+    Puoi selezionare più ruoli, tranne POR che resta esclusivo. Se non selezioni nulla, il ruolo sarà assegnato automaticamente.
+  </div>
+</div>
                 </div>
 
                 <button
@@ -1153,7 +1279,7 @@ ctx.fillText('VS', vsX, vsY + vsRadius / 2 + 8);
                   <textarea
                     id="bulkText"
                     className="form-input form-textarea"
-                    placeholder="Esempi di formato supportato:&#10;Luca 8.5&#10;Marco - 7&#10;Giovanni (6.0)&#10;9 Alessandro"
+                    placeholder="Esempi di formato supportato:&#10;Luca 8.5 (CEN)&#10;Marco - 7 (DIF/CEN)&#10;Giovanni (ATT)&#10;Christian 6 (POR)&#10;9 Alessandro (CEN,ATT)"
                     value={bulkText}
                     onChange={(e) => setBulkText(e.target.value)}
                   />
@@ -1224,24 +1350,29 @@ ctx.fillText('VS', vsX, vsY + vsRadius / 2 + 8);
                         </button>
 
                         {/* Toggle Portiere */}
-                        <button
-                          type="button"
-                          className="action-icon-btn"
-                          title={player.isGoalkeeper ? "Rimuovi ruolo Portiere" : "Contrassegna come Portiere"}
-                          onClick={() => toggleGoalkeeper(player.id)}
-                          style={{
-                            opacity: player.isGoalkeeper ? 1 : 0.25,
-                            fontSize: '1rem',
-                            padding: '4px',
-                            transition: 'var(--transition-smooth)'
-                          }}
-                        >
-                          🧤
-                        </button>
+                        <div className="mini-role-selector">
+  {PLAYER_ROLES.map(role => {
+    const active = getPlayerRoles(player).includes(role);
+
+    return (
+      <button
+        key={role}
+        type="button"
+        className={`mini-role-chip ${active ? 'active' : ''}`}
+        title={`Toggle ruolo ${role}`}
+        onClick={() => toggleRole(player.id, role)}
+      >
+        {role}
+      </button>
+    );
+  })}
+</div>
 
                         <span className="player-name">
                           {player.name}
-                          {player.isGoalkeeper && <span style={{ color: '#f97316', fontSize: '0.75rem', fontWeight: 600, marginLeft: '6px' }}>(GK)</span>}
+                          <span style={{ color: '#f97316', fontSize: '0.75rem', fontWeight: 600, marginLeft: '6px' }}>
+  ({getRoleLabel(player)})
+</span>
                         </span>
                       </div>
 
@@ -1482,7 +1613,7 @@ ctx.fillText('VS', vsX, vsY + vsRadius / 2 + 8);
               {teams.map((team, idx) => {
                 const avg = team.players.length > 0 ? (team.ratingSum / team.players.length).toFixed(1) : '0.0';
                 const colorIndex = (idx % 6) + 1;
-                const gkCount = team.players.filter(p => p.isGoalkeeper).length;
+                const gkCount = team.players.filter(p => isGoalkeeperPlayer(p)).length;
 
                 return (
                   <div key={team.id} className={`glass-card team-card team-${colorIndex}`}>
@@ -1526,10 +1657,10 @@ ctx.fillText('VS', vsX, vsY + vsRadius / 2 + 8);
                             }}
                           >
                             <div className="team-player-left">
-                              <span className="jersey-number">{player.isGoalkeeper ? '🧤' : pIdx + 1}</span>
+                              <span className="jersey-number">{isGoalkeeperPlayer(player) ? '🧤' : pIdx + 1}</span>
                               <span className="team-player-name">
                                 {player.name}
-                                {player.isGoalkeeper && <span style={{ color: '#f97316', fontSize: '0.75rem', fontWeight: 600, marginLeft: '6px' }}>(GK)</span>}
+                                {isGoalkeeperPlayer(player) && <span style={{ color: '#f97316', fontSize: '0.75rem', fontWeight: 600, marginLeft: '6px' }}>(GK)</span>}
                               </span>
                             </div>
 
@@ -1631,8 +1762,8 @@ ctx.fillText('VS', vsX, vsY + vsRadius / 2 + 8);
             className={`pitch-player-node ${isSelected ? 'selected' : ''}`}
             onClick={() => handleSelectForSwap(pitchTeamA.id, pIdx)}
           >
-            <div className={`pitch-jersey pitch-jersey-${teamColorIndex} ${player.isGoalkeeper ? 'gk-jersey' : ''}`}>
-              {player.isGoalkeeper ? '🧤' : pIdx + 1}
+            <div className={`pitch-jersey pitch-jersey-${teamColorIndex} ${isGoalkeeperPlayer(player) ? 'gk-jersey' : ''}`}>
+              {isGoalkeeperPlayer(player) ? '🧤' : pIdx + 1}
               <span className="pitch-jersey-badge">{player.rating.toFixed(0)}</span>
             </div>
             <span className="pitch-player-name" title={player.name}>
@@ -1666,8 +1797,8 @@ ctx.fillText('VS', vsX, vsY + vsRadius / 2 + 8);
             className={`pitch-player-node ${isSelected ? 'selected' : ''}`}
             onClick={() => handleSelectForSwap(pitchTeamB.id, pIdx)}
           >
-            <div className={`pitch-jersey pitch-jersey-${teamColorIndex} ${player.isGoalkeeper ? 'gk-jersey' : ''}`}>
-              {player.isGoalkeeper ? '🧤' : pIdx + 1}
+            <div className={`pitch-jersey pitch-jersey-${teamColorIndex} ${isGoalkeeperPlayer(player) ? 'gk-jersey' : ''}`}>
+              {isGoalkeeperPlayer(player) ? '🧤' : pIdx + 1}
               <span className="pitch-jersey-badge">{player.rating.toFixed(0)}</span>
             </div>
             <span className="pitch-player-name" title={player.name}>
