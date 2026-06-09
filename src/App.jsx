@@ -1356,22 +1356,31 @@ ctx.fillText('VS', vsX, vsY + vsRadius / 2 + 8);
                         </button>
 
                         {/* Toggle Portiere */}
-                        <div className="mini-role-selector">
-  {PLAYER_ROLES.map(role => {
-    const active = getPlayerRoles(player).includes(role);
+                        <div className="player-name-with-roles">
+  <span className="player-name">
+    {player.name}
+    <span style={{ color: '#f97316', fontSize: '0.75rem', fontWeight: 600, marginLeft: '6px' }}>
+      ({getRoleLabel(player)})
+    </span>
+  </span>
 
-    return (
-      <button
-        key={role}
-        type="button"
-        className={`mini-role-chip ${active ? 'active' : ''}`}
-        title={`Toggle ruolo ${role}`}
-        onClick={() => toggleRole(player.id, role)}
-      >
-        {role}
-      </button>
-    );
-  })}
+  <div className="mini-role-selector">
+    {PLAYER_ROLES.map(role => {
+      const active = getPlayerRoles(player).includes(role);
+
+      return (
+        <button
+          key={role}
+          type="button"
+          className={`mini-role-chip ${active ? 'active' : ''}`}
+          title={`Toggle ruolo ${role}`}
+          onClick={() => toggleRole(player.id, role)}
+        >
+          {role}
+        </button>
+      );
+    })}
+  </div>
 </div>
 
                         <span className="player-name">
