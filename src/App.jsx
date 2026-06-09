@@ -125,20 +125,20 @@ const togglePlayerRole = (roles = [], role) => {
 
 // --- LISTA GIOCATORI DI PROVA INIZIALE - 14 GIOCATORI PER MATCH 7 vs 7 ---
 const SAMPLE_PLAYERS = [
-  { name: 'Alessandro', rating: 9, roles: ['ATT'] },
-  { name: 'Luca', rating: 8, roles: ['CEN'] },
-  { name: 'Francesco', rating: 8, roles: ['DIF'] },
-  { name: 'Federico', rating: 9.5, roles: ['ATT', 'CEN'] },
-  { name: 'Matteo', rating: 7, roles: ['DIF'] },
-  { name: 'Marco', rating: 7, roles: ['CEN'] },
-  { name: 'Giovanni', rating: 6 },
-  { name: 'Lorenzo', rating: 6 },
-  { name: 'Gabriele', rating: 7.5, roles: ['ATT'] },
-  { name: 'Andrea', rating: 6.5, roles: ['DIF', 'CEN'] },
-  { name: 'Simone', rating: 7 },
-  { name: 'Filippo', rating: 6 },
-  { name: 'Christian', rating: 5.5, roles: ['POR'] },
-  { name: 'Davide', rating: 5.5, roles: ['POR'] }
+  { name: 'Alessandro', rating: 6, roles: ['CEN'] },
+  { name: 'Luca', rating: 6, roles: ['CEN','ATT'] },
+  { name: 'Jeff', rating: 6, roles: ['CEN'] },
+  { name: 'Roncho', rating: 6, roles: ['DIF'] },
+  { name: 'Ross', rating: 6, roles: ['DIF'] },
+  { name: 'AndreaV', rating: 6, roles: ['DIF'] },
+  { name: 'Giovanni', rating: 6, roles:['DIF', 'CEN']},
+  { name: 'Dario', rating: 6, roles:['CEN'] },
+  { name: 'Eros', rating: 6, roles: ['ATT'] },
+  { name: 'Andrea', rating: 6, roles: ['DIF'] },
+  { name: 'Pierluigi', rating: 6,roles: ['DIF','CEN'] },
+  { name: 'Albu', rating: 6, roles: ['POR']},
+  { name: 'Angelo', rating: 6, roles: ['DIF', 'CEN']},
+  { name: 'Steccio', rating: 6, roles: ['CEN'] }
 ];
 
 function App() {
