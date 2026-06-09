@@ -989,8 +989,8 @@ function App() {
     return teams.find(t => t.id === pitchTeamBId) || null;
   }, [teams, pitchTeamBId]);
 
-  const getTacticalPlayers = (team) => {
-  if (!team) return [];
+  const getTacticalLines = (team) => {
+  if (!team) return { gk: [], def: [], mid: [], att: [] };
 
   const players = [...team.players];
 
@@ -1000,13 +1000,12 @@ function App() {
 
   const fieldPlayers = players.filter(p => p.id !== goalkeeper.id);
 
-  return [
-    { ...goalkeeper, tacticalRole: 'gk' },
-    ...fieldPlayers.slice(0, 2).map(p => ({ ...p, tacticalRole: 'def' })),
-    ...fieldPlayers.slice(2, 5).map(p => ({ ...p, tacticalRole: 'mid' })),
-    ...fieldPlayers.slice(5, 6).map(p => ({ ...p, tacticalRole: 'att' })),
-    ...fieldPlayers.slice(6).map(p => ({ ...p, tacticalRole: 'extra' }))
-  ];
+  return {
+    gk: [goalkeeper],
+    def: fieldPlayers.slice(0, 2),
+    mid: fieldPlayers.slice(2, 5),
+    att: fieldPlayers.slice(5)
+  };
 };
   
   // Badge color helper
@@ -1587,66 +1586,71 @@ function App() {
                 {/* Metà campo sinistra: Team A */}
                 <div className="pitch-half pitch-half-left">
                   {pitchTeamA ? (
-                    // Ordina mettendo i portieri per primi (verranno renderizzati in porta o in alto a sinistra)
-                    getTacticalPlayers(pitchTeamA).map((player) => {
-                      const pIdx = pitchTeamA.players.indexOf(player);
-                      const isSelected = selectedPlayerForSwap &&
-                        selectedPlayerForSwap.teamId === pitchTeamA.id &&
-                        selectedPlayerForSwap.playerIndex === pIdx;
-                      const teamColorIndex = (teams.indexOf(pitchTeamA) % 6) + 1;
+  ['gk', 'def', 'mid', 'att'].map((line) => (
+    <div key={line} className={`pitch-line pitch-line-${line}`}>
+      {getTacticalLines(pitchTeamA)[line].map((player) => {
+        const pIdx = pitchTeamA.players.indexOf(player);
+        const isSelected = selectedPlayerForSwap &&
+          selectedPlayerForSwap.teamId === pitchTeamA.id &&
+          selectedPlayerForSwap.playerIndex === pIdx;
+        const teamColorIndex = (teams.indexOf(pitchTeamA) % 6) + 1;
 
-                      return (
-                        <div
-                          key={player.id}
-                          className={`pitch-player-node tactical-${player.tacticalRole} ${isSelected ? 'selected' : ''}`}
-                          onClick={() => handleSelectForSwap(pitchTeamA.id, pIdx)}
-                          style={{ cursor: 'pointer' }}
-                        >
-                          <div className={`pitch-jersey pitch-jersey-${teamColorIndex} ${player.isGoalkeeper ? 'gk-jersey' : ''}`}>
-                            {player.isGoalkeeper ? '🧤' : pIdx + 1}
-                            <span className="pitch-jersey-badge">{player.rating.toFixed(0)}</span>
-                          </div>
-                          <span className="pitch-player-name" title={player.name}>
-                            {player.name}
-                          </span>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <span style={{ color: 'rgba(255,255,255,0.3)' }}>Nessuna squadra</span>
-                  )}
+        return (
+          <div
+            key={player.id}
+            className={`pitch-player-node ${isSelected ? 'selected' : ''}`}
+            onClick={() => handleSelectForSwap(pitchTeamA.id, pIdx)}
+          >
+            <div className={`pitch-jersey pitch-jersey-${teamColorIndex} ${player.isGoalkeeper ? 'gk-jersey' : ''}`}>
+              {player.isGoalkeeper ? '🧤' : pIdx + 1}
+              <span className="pitch-jersey-badge">{player.rating.toFixed(0)}</span>
+            </div>
+            <span className="pitch-player-name" title={player.name}>
+              {player.name}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  ))
+) : (
+  <span style={{ color: 'rgba(255,255,255,0.3)' }}>Nessuna squadra</span>
+)}
                 </div>
 
                 {/* Metà campo destra: Team B */}
                 <div className="pitch-half pitch-half-right">
                   {pitchTeamB ? (
-                    getTacticalPlayers(pitchTeamB).map((player) => {
-                      const pIdx = pitchTeamB.players.indexOf(player);
-                      const isSelected = selectedPlayerForSwap &&
-                        selectedPlayerForSwap.teamId === pitchTeamB.id &&
-                        selectedPlayerForSwap.playerIndex === pIdx;
-                      const teamColorIndex = (teams.indexOf(pitchTeamB) % 6) + 1;
+  ['att', 'mid', 'def', 'gk'].map((line) => (
+    <div key={line} className={`pitch-line pitch-line-${line}`}>
+      {getTacticalLines(pitchTeamB)[line].map((player) => {
+        const pIdx = pitchTeamB.players.indexOf(player);
+        const isSelected = selectedPlayerForSwap &&
+          selectedPlayerForSwap.teamId === pitchTeamB.id &&
+          selectedPlayerForSwap.playerIndex === pIdx;
+        const teamColorIndex = (teams.indexOf(pitchTeamB) % 6) + 1;
 
-                      return (
-                        <div
-                          key={player.id}
-                          className={`pitch-player-node tactical-${player.tacticalRole} ${isSelected ? 'selected' : ''}`}
-                          onClick={() => handleSelectForSwap(pitchTeamB.id, pIdx)}
-                          style={{ cursor: 'pointer' }}
-                        >
-                          <div className={`pitch-jersey pitch-jersey-${teamColorIndex} ${player.isGoalkeeper ? 'gk-jersey' : ''}`}>
-                            {player.isGoalkeeper ? '🧤' : pIdx + 1}
-                            <span className="pitch-jersey-badge">{player.rating.toFixed(0)}</span>
-                          </div>
-                          <span className="pitch-player-name" title={player.name}>
-                            {player.name}
-                          </span>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <span style={{ color: 'rgba(255,255,255,0.3)' }}>Nessuna squadra</span>
-                  )}
+        return (
+          <div
+            key={player.id}
+            className={`pitch-player-node ${isSelected ? 'selected' : ''}`}
+            onClick={() => handleSelectForSwap(pitchTeamB.id, pIdx)}
+          >
+            <div className={`pitch-jersey pitch-jersey-${teamColorIndex} ${player.isGoalkeeper ? 'gk-jersey' : ''}`}>
+              {player.isGoalkeeper ? '🧤' : pIdx + 1}
+              <span className="pitch-jersey-badge">{player.rating.toFixed(0)}</span>
+            </div>
+            <span className="pitch-player-name" title={player.name}>
+              {player.name}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  ))
+) : (
+  <span style={{ color: 'rgba(255,255,255,0.3)' }}>Nessuna squadra</span>
+)}
                 </div>
               </div>
             </div>
