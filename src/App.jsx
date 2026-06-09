@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import TeamRadar from './TeamRadar';
 
 // --- ICONE SVG INLINE PER EVITARE DIPENDENZE ---
 const IconSoccer = () => (
@@ -724,7 +725,7 @@ const regulars = availablePlayers.filter(p => !isGoalkeeperPlayer(p)).sort(() =>
     const isTwoTeams = teams.length === 2;
 
     const canvasWidth = isTwoTeams ? 1200 : 80 + teams.length * 280;
-    const canvasHeight = 880;
+    const canvasHeight = 1050;
 
     canvas.width = canvasWidth;
     canvas.height = canvasHeight;
@@ -950,6 +951,8 @@ ctx.stroke();
 ctx.fillStyle = '#10b981';
 ctx.font = 'bold 22px Outfit, sans-serif';
 ctx.fillText('VS', vsX, vsY + vsRadius / 2 + 8);
+drawTeamRadar(ctx, t1, 330, 900, 70, '#ffffff');
+drawTeamRadar(ctx, t2, 870, 900, 70, '#0f172a');
 
       // Determine favored team based on lower odds
       if (t1Odds !== 'N/A' && t2Odds !== 'N/A') {
@@ -1040,7 +1043,7 @@ drawRolePills(ctx, getPlayerRoles(p), startX + 60, y + 10);
     if (balanceMetrics) {
       ctx.fillStyle = '#10b981';
       ctx.font = '500 15px Outfit, sans-serif';
-      ctx.fillText(`Dislivello Voti: ${balanceMetrics.diff} punti  •  Indice Equilibrio: ${balanceMetrics.percentage}%`, canvasWidth / 2, 800);
+      ctx.fillText(`Dislivello Voti: ${balanceMetrics.diff} punti  •  Indice Equilibrio: ${balanceMetrics.percentage}%`, canvasWidth / 2, 1020);
     }
 
     // Condividi o scarica l'immagine
@@ -1084,6 +1087,101 @@ drawRolePills(ctx, getPlayerRoles(p), startX + 60, y + 10);
       }
     }, 'image/png');
   };
+
+  const getRoleAverage = (teamPlayers, role) => {
+  const filtered = teamPlayers.filter(p => getPlayerRoles(p).includes(role));
+  if (filtered.length === 0) return 0;
+
+  return filtered.reduce((sum, p) => sum + p.rating, 0) / filtered.length;
+};
+
+const getTeamRadarValues = (teamPlayers) => ({
+  POR: (() => {
+  const value = getRoleAverage(teamPlayers, 'POR');
+  return value > 0 ? value : 3;
+})(),
+  DIF: getRoleAverage(teamPlayers, 'DIF'),
+  CEN: getRoleAverage(teamPlayers, 'CEN'),
+  ATT: getRoleAverage(teamPlayers, 'ATT'),
+  TOT: teamPlayers.length
+    ? teamPlayers.reduce((sum, p) => sum + p.rating, 0) / teamPlayers.length
+    : 0
+});
+
+const drawTeamRadar = (ctx, team, centerX, centerY, radius, titleColor = '#ffffff') => {
+  const axes = ['TOT', 'POR', 'DIF', 'CEN', 'ATT'];
+  const values = getTeamRadarValues(team.players);
+
+  const getPoint = (index, value = 10) => {
+    const angle = -Math.PI / 2 + index * 2 * Math.PI / axes.length;
+    const r = radius * (value / 10);
+
+    return {
+      x: centerX + Math.cos(angle) * r,
+      y: centerY + Math.sin(angle) * r
+    };
+  };
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = titleColor;
+  ctx.font = 'bold 18px Outfit, sans-serif';
+  ctx.fillText(team.name.toUpperCase(), centerX, centerY - radius - 34);
+
+  [0.25, 0.5, 0.75, 1].forEach(level => {
+    ctx.beginPath();
+    axes.forEach((_, index) => {
+      const p = getPoint(index, 10 * level);
+      if (index === 0) ctx.moveTo(p.x, p.y);
+      else ctx.lineTo(p.x, p.y);
+    });
+    ctx.closePath();
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  });
+
+  axes.forEach((axis, index) => {
+    const end = getPoint(index, 10);
+
+    ctx.beginPath();
+    ctx.moveTo(centerX, centerY);
+    ctx.lineTo(end.x, end.y);
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.stroke();
+
+    const label = getPoint(index, 12);
+
+    ctx.fillStyle = getRoleColor(axis);
+    ctx.font = 'bold 11px Outfit, sans-serif';
+    ctx.fillText(axis, label.x, label.y);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 10px Outfit, sans-serif';
+    ctx.fillText(values[axis].toFixed(1), label.x, label.y + 13);
+  });
+
+  ctx.beginPath();
+  axes.forEach((axis, index) => {
+    const p = getPoint(index, values[axis]);
+    if (index === 0) ctx.moveTo(p.x, p.y);
+    else ctx.lineTo(p.x, p.y);
+  });
+  ctx.closePath();
+
+  ctx.fillStyle = 'rgba(16,185,129,0.35)';
+  ctx.strokeStyle = '#10b981';
+  ctx.lineWidth = 3;
+  ctx.fill();
+  ctx.stroke();
+
+  axes.forEach((axis, index) => {
+    const p = getPoint(index, values[axis]);
+    ctx.fillStyle = getRoleColor(axis);
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+    ctx.fill();
+  });
+};
 
   // --- UTILITY PER TOAST NOTIFICATIONS ---
   const showToast = (msg) => {
@@ -1818,6 +1916,7 @@ const getRoleColor = (role) => {
               <h2 className="card-title" style={{ margin: 0, border: 'none', padding: 0 }}>
                 Squadre Generate
               </h2>
+              
 
               <div className="results-actions">
                 <button
@@ -1852,9 +1951,13 @@ const getRoleColor = (role) => {
                 const gkCount = team.players.filter(p => isGoalkeeperPlayer(p)).length;
 
                 return (
+                  
                   <div key={team.id} className={`glass-card team-card team-${colorIndex}`}>
-
+                    
                     <div className="team-header">
+                      <div className="team-radar-grid">
+                    <TeamRadar key={team.id} team={team} />
+                  </div>
                       <div className="team-info-left">
                         <span className="team-name">{team.name}</span>
                         <span className="team-stats-summary">
