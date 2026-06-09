@@ -126,17 +126,6 @@ export default function TeamRadar({ team, size = 220 }) {
                 {axis}
               </text>
 
-              <text
-                x={label.x}
-                y={label.y + 14}
-                textAnchor="middle"
-                dominantBaseline="middle"
-                fill="#ffffff"
-                fontSize="11"
-                fontWeight="700"
-              >
-                {values[axis].toFixed(1)}
-              </text>
             </g>
           );
         })}

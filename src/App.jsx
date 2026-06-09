@@ -952,7 +952,7 @@ ctx.fillStyle = '#10b981';
 ctx.font = 'bold 22px Outfit, sans-serif';
 ctx.fillText('VS', vsX, vsY + vsRadius / 2 + 8);
 drawTeamRadar(ctx, t1, 330, 900, 70, '#ffffff');
-drawTeamRadar(ctx, t2, 870, 900, 70, '#0f172a');
+drawTeamRadar(ctx, t2, 870, 900, 70, '#ffffff');
 
       // Determine favored team based on lower odds
       if (t1Odds !== 'N/A' && t2Odds !== 'N/A') {
@@ -1154,10 +1154,6 @@ const drawTeamRadar = (ctx, team, centerX, centerY, radius, titleColor = '#fffff
     ctx.fillStyle = getRoleColor(axis);
     ctx.font = 'bold 11px Outfit, sans-serif';
     ctx.fillText(axis, label.x, label.y);
-
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 10px Outfit, sans-serif';
-    ctx.fillText(values[axis].toFixed(1), label.x, label.y + 13);
   });
 
   ctx.beginPath();
