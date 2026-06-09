@@ -1947,7 +1947,9 @@ const getRoleColor = (role) => {
           >
             <div className={`pitch-jersey pitch-jersey-${teamColorIndex} ${isGoalkeeperPlayer(player) ? 'gk-jersey' : ''}`}>
               {isGoalkeeperPlayer(player) ? '🧤' : pIdx + 1}
-              <span className="pitch-jersey-badge">{player.rating.toFixed(0)}</span>
+              <span className={`pitch-jersey-badge role-${getPrimaryRoleForLine(player, line)}`}>
+  {getPrimaryRoleForLine(player, line)}
+</span>
             </div>
             <span className="pitch-player-name" title={player.name}>
               {player.name}
