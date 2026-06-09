@@ -48,33 +48,62 @@ body {
   height: 8px;
 }
 
-.role-POR {
-  background: #f97316;
+.pitch-jersey-badge.role-POR {
+  background: #f97316 !important;
 }
 
-.role-DIF {
-  background: #3b82f6;
+.pitch-jersey-badge.role-DIF {
+  background: #3b82f6 !important;
 }
 
-.role-CEN {
-  background: #10b981;
+.pitch-jersey-badge.role-CEN {
+  background: #10b981 !important;
 }
 
-.role-ATT {
-  background: #ef4444;
+.pitch-jersey-badge.role-ATT {
+  background: #ef4444 !important;
 }
 
-.role-AUTO {
-  background: #94a3b8;
+.pitch-jersey-badge.role-AUTO {
+  background: #94a3b8 !important;
 }
 
 .pitch-jersey-badge {
-  min-width: 28px;
-  padding: 2px 5px;
+  min-width: 30px;
+  padding: 2px 6px;
   border-radius: 999px;
-  font-size: 0.6rem;
+  font-size: 0.58rem;
   font-weight: 800;
-  color: #fff;
+  color: #fff !important;
+  line-height: 1;
+}
+
+.mini-role-chip.active:nth-child(1),
+.role-chip.active:nth-child(1) {
+  background: #f97316 !important;
+  border-color: #f97316 !important;
+  color: #fff !important;
+}
+
+.mini-role-chip.active:nth-child(2),
+.role-chip.active:nth-child(2) {
+  background: #3b82f6 !important;
+  border-color: #3b82f6 !important;
+  color: #fff !important;
+}
+
+.mini-role-chip.active:nth-child(3),
+.role-chip.active:nth-child(3) {
+  background: #10b981 !important;
+  border-color: #10b981 !important;
+  color: #fff !important;
+}
+
+.mini-role-chip.active:nth-child(4),
+.role-chip.active:nth-child(4) {
+  background: #ef4444 !important;
+  border-color: #ef4444 !important;
+  color: #fff !important;
 }
 
 ::-webkit-scrollbar-track {
