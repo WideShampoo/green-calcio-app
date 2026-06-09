@@ -68,6 +68,41 @@ body {
   min-height: 100vh;
 }
 
+.role-selector,
+.mini-role-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.role-chip,
+.mini-role-chip {
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.04);
+  color: var(--text-muted);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  font-weight: 700;
+}
+
+.role-chip {
+  padding: 8px 14px;
+  font-size: 0.85rem;
+}
+
+.mini-role-chip {
+  padding: 3px 7px;
+  font-size: 0.68rem;
+}
+
+.role-chip.active,
+.mini-role-chip.active {
+  background: rgba(16, 185, 129, 0.18);
+  color: var(--primary);
+  border-color: rgba(16, 185, 129, 0.55);
+}
+
 .app-container {
   width: 1280px;
   max-width: 95%;
