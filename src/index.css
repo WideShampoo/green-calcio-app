@@ -2,7 +2,6 @@
 :root {
   --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
-  /* Palette Colori Premium - Tema Calcio Dark/Neon */
   --bg-darker: #0a0d0c;
   --bg-dark: #0f1512;
   --bg-card: rgba(22, 32, 28, 0.65);
@@ -11,12 +10,10 @@
   --border-glass-hover: rgba(16, 185, 129, 0.35);
 
   --primary: #10b981;
-  /* Emerald Green */
   --primary-glow: rgba(16, 185, 129, 0.4);
   --primary-dark: #059669;
 
   --secondary: #3b82f6;
-  /* Blue for Team B */
   --secondary-glow: rgba(59, 130, 246, 0.4);
   --accent-orange: #f59e0b;
   --accent-red: #ef4444;
@@ -46,7 +43,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* --- Scrollbar Customization --- */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -66,7 +62,6 @@ body {
   background: var(--primary-dark);
 }
 
-/* --- Layout Principale --- */
 #root {
   display: flex;
   flex-direction: column;
@@ -84,7 +79,6 @@ body {
   gap: 32px;
 }
 
-/* --- Header Stilizzato --- */
 .app-header {
   text-align: center;
   margin-bottom: 8px;
@@ -123,7 +117,6 @@ body {
   margin: 0 auto;
 }
 
-/* --- Glassmorphism Card Style --- */
 .glass-card {
   background: var(--bg-card);
   backdrop-filter: blur(16px);
@@ -156,7 +149,6 @@ body {
   color: var(--primary);
 }
 
-/* --- Grids --- */
 .main-grid {
   display: grid;
   grid-template-columns: 1.1fr 0.9fr;
@@ -175,7 +167,6 @@ body {
   gap: 20px;
 }
 
-/* Tab per Inserimento (Singolo vs Massivo) */
 .tabs-header {
   display: flex;
   background: rgba(0, 0, 0, 0.2);
@@ -210,7 +201,6 @@ body {
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
-/* --- Elementi dei Form --- */
 .form-group {
   display: flex;
   flex-direction: column;
@@ -254,7 +244,6 @@ body {
   min-height: 120px;
 }
 
-/* Custom Slider Rating (1-10) */
 .rating-slider-container {
   display: flex;
   align-items: center;
@@ -296,7 +285,6 @@ body {
   text-shadow: 0 0 10px var(--primary-glow);
 }
 
-/* Pulsanti */
 .btn {
   background: var(--primary);
   color: var(--text-inverse);
@@ -360,7 +348,6 @@ body {
   gap: 12px;
 }
 
-/* --- Lista dei Giocatori --- */
 .player-list-header {
   display: flex;
   justify-content: space-between;
@@ -429,7 +416,6 @@ body {
   gap: 12px;
 }
 
-/* Badge Voti Colorati */
 .rating-badge {
   display: inline-flex;
   align-items: center;
@@ -491,7 +477,6 @@ body {
   opacity: 0.3;
 }
 
-/* --- Impostazioni di Generazione --- */
 .settings-section {
   display: flex;
   flex-direction: column;
@@ -519,7 +504,6 @@ body {
   background: linear-gradient(135deg, #34d399 0%, var(--primary) 100%);
 }
 
-/* --- Match Mode Toggle (7v7 / 5v5) --- */
 .match-mode-toggle {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -575,7 +559,6 @@ body {
   opacity: 0.7;
 }
 
-/* --- Player Count Status Indicator --- */
 .player-count-status {
   display: flex;
   align-items: center;
@@ -611,7 +594,6 @@ body {
   color: #f87171;
 }
 
-/* --- Risultati Squadre --- */
 .results-header {
   display: flex;
   justify-content: space-between;
@@ -644,32 +626,25 @@ body {
   border-color: #334155;
 }
 
-/* Black Team */
 .team-card.team-2 {
   border-color: #e2e8f0;
 }
 
-/* White Team */
 .team-card.team-3 {
   border-color: #f59e0b;
 }
 
-/* Yellow */
 .team-card.team-4 {
   border-color: #a855f7;
 }
 
-/* Purple */
 .team-card.team-5 {
   border-color: #ec4899;
 }
 
-/* Pink */
 .team-card.team-6 {
   border-color: #06b6d4;
 }
-
-/* Cyan */
 
 .team-header {
   display: flex;
@@ -722,7 +697,6 @@ body {
   flex-grow: 1;
 }
 
-/* Singolo giocatore nella squadra generata */
 .team-player-row {
   display: flex;
   justify-content: space-between;
@@ -795,7 +769,6 @@ body {
   font-weight: 500;
 }
 
-/* Bottone per swap manuale interattivo */
 .swap-select-btn {
   background: transparent;
   border: none;
@@ -820,7 +793,6 @@ body {
   box-shadow: 0 0 8px var(--primary);
 }
 
-/* Indicatore di Bilanciamento Globale */
 .balance-gauge-card {
   display: flex;
   flex-direction: column;
@@ -922,9 +894,7 @@ body {
   padding: 20px;
 }
 
-/* Linee del campo */
 .soccer-pitch::before {
-  /* Linea di centrocampo */
   content: '';
   position: absolute;
   top: 0;
@@ -937,7 +907,6 @@ body {
 }
 
 .soccer-pitch::after {
-  /* Cerchio di centrocampo */
   content: '';
   position: absolute;
   top: 50%;
@@ -950,7 +919,6 @@ body {
   z-index: 1;
 }
 
-/* Aree di rigore */
 .penalty-area-left {
   position: absolute;
   left: 0;
@@ -975,35 +943,40 @@ body {
   z-index: 1;
 }
 
-/* Metà campo (contenitori delle squadre) */
+/* --- Anteprima tattica 2-3-1 con linee flex --- */
 .pitch-half {
-  width: 45%;
+  width: 48%;
   height: 100%;
   position: relative;
   z-index: 2;
   display: flex;
-  flex-wrap: wrap;
-  align-content: space-around;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px;
+}
+
+.pitch-line {
+  height: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
-  gap: 16px;
-  padding: 10px;
+  gap: 18px;
 }
 
-.pitch-half-left {
-  align-items: flex-start;
+.pitch-line-gk {
+  flex: 0.75;
 }
 
-.pitch-half-right {
-  align-items: flex-start;
-}
-
-/* Giocatore sul Campo */
 .pitch-player-node {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  width: 70px;
+  width: 76px;
+  flex-shrink: 0;
   transition: var(--transition-smooth);
   animation: scaleIn 0.3s ease-out;
 }
@@ -1043,7 +1016,6 @@ body {
   color: #0f172a;
 }
 
-/* Portiere sul Campo - Maglia Speciale Arancione Fluorescente */
 .pitch-jersey.gk-jersey {
   background: linear-gradient(135deg, #ff8800 0%, #e04400 100%) !important;
   box-shadow: 0 0 15px rgba(255, 85, 0, 0.7) !important;
@@ -1071,7 +1043,6 @@ body {
   box-shadow: 0 4px 12px rgba(6, 182, 212, 0.4);
 }
 
-/* Badge del voto posizionato sopra la maglia */
 .pitch-jersey-badge {
   position: absolute;
   top: -6px;
@@ -1102,7 +1073,6 @@ body {
   text-align: center;
 }
 
-/* Selezionato per lo swap sul campo */
 .pitch-player-node.selected .pitch-jersey {
   outline: 3px solid #fff;
   outline-offset: 2px;
@@ -1110,7 +1080,6 @@ body {
   animation: pulseGlow 1.5s infinite alternate;
 }
 
-/* Giocatori panchina */
 .substitutes-section {
   display: flex;
   flex-direction: column;
@@ -1155,7 +1124,6 @@ body {
   color: var(--accent-orange);
 }
 
-/* --- Notifiche in-app --- */
 .toast {
   position: fixed;
   bottom: 24px;
@@ -1173,7 +1141,6 @@ body {
   gap: 8px;
 }
 
-/* --- Footer --- */
 .app-footer {
   text-align: center;
   padding: 40px 0 20px;
@@ -1192,56 +1159,6 @@ body {
   text-decoration: underline;
 }
 
-.pitch-half {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  align-items: center;
-  justify-items: center;
-}
-
-.pitch-player-node {
-  width: 78px;
-}
-
-/* Team sinistra: GK vicino porta, poi 2-3-1 verso il centro */
-.pitch-half-left .tactical-gk {
-  grid-column: 1;
-  grid-row: 2 / span 2;
-}
-
-.pitch-half-left .tactical-def {
-  grid-column: 2;
-}
-
-.pitch-half-left .tactical-mid {
-  grid-column: 3;
-}
-
-.pitch-half-left .tactical-att,
-.pitch-half-left .tactical-extra {
-  grid-column: 4;
-}
-
-/* Team destra: schema specchiato */
-.pitch-half-right .tactical-gk {
-  grid-column: 4;
-  grid-row: 2 / span 2;
-}
-
-.pitch-half-right .tactical-def {
-  grid-column: 3;
-}
-
-.pitch-half-right .tactical-mid {
-  grid-column: 2;
-}
-
-.pitch-half-right .tactical-att,
-.pitch-half-right .tactical-extra {
-  grid-column: 1;
-}
-
-/* --- ANIMAZIONI --- */
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -1267,7 +1184,6 @@ body {
 }
 
 @keyframes float {
-
   0%,
   100% {
     transform: translateY(0px) rotate(0deg);
@@ -1287,7 +1203,6 @@ body {
     transform: scale(1.05);
   }
 }
-
 
 @media (max-width: 600px) {
   body {
@@ -1408,12 +1323,84 @@ body {
   }
 
   .pitch-container-outer {
-    overflow-x: auto;
+    overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
   }
 
   .soccer-pitch {
-    min-width: 560px;
+    min-width: 0;
+    width: 100%;
+    height: 780px;
+    flex-direction: column;
+    padding: 16px;
+  }
+
+  .soccer-pitch::before {
+    top: 50%;
+    bottom: auto;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    transform: translateY(-50%);
+  }
+
+  .soccer-pitch::after {
+    width: 90px;
+    height: 90px;
+  }
+
+  .penalty-area-left {
+    top: 0;
+    left: 50%;
+    width: 180px;
+    height: 70px;
+    transform: translateX(-50%);
+    border: 4px solid rgba(255, 255, 255, 0.4);
+    border-top: none;
+  }
+
+  .penalty-area-right {
+    bottom: 0;
+    top: auto;
+    left: 50%;
+    right: auto;
+    width: 180px;
+    height: 70px;
+    transform: translateX(-50%);
+    border: 4px solid rgba(255, 255, 255, 0.4);
+    border-bottom: none;
+  }
+
+  .pitch-half {
+    width: 100%;
+    height: 48%;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .pitch-line {
+    width: 100%;
+    height: auto;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .pitch-player-node {
+    width: 68px;
+  }
+
+  .pitch-jersey {
+    width: 38px;
+    height: 38px;
+  }
+
+  .pitch-player-name {
+    max-width: 68px;
+    font-size: 0.72rem;
   }
 
   .toast {
@@ -1422,95 +1409,4 @@ body {
     bottom: 16px;
     justify-content: center;
   }
-
-  .soccer-pitch {
-  min-width: 0;
-  width: 100%;
-  height: 760px;
-  flex-direction: column;
-  padding: 16px;
-}
-
-.soccer-pitch::before {
-  top: 50%;
-  bottom: auto;
-  left: 0;
-  width: 100%;
-  height: 4px;
-  transform: translateY(-50%);
-}
-
-.soccer-pitch::after {
-  width: 90px;
-  height: 90px;
-}
-
-.penalty-area-left {
-  top: 0;
-  left: 50%;
-  width: 180px;
-  height: 70px;
-  transform: translateX(-50%);
-  border: 4px solid rgba(255, 255, 255, 0.4);
-  border-top: none;
-}
-
-.penalty-area-right {
-  bottom: 0;
-  top: auto;
-  left: 50%;
-  right: auto;
-  width: 180px;
-  height: 70px;
-  transform: translateX(-50%);
-  border: 4px solid rgba(255, 255, 255, 0.4);
-  border-bottom: none;
-}
-
-.pitch-half {
-  width: 100%;
-  height: 48%;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(4, 1fr);
-}
-
-/* Smartphone: squadra sopra */
-.pitch-half-left .tactical-gk {
-  grid-column: 2;
-  grid-row: 1;
-}
-
-.pitch-half-left .tactical-def {
-  grid-row: 2;
-}
-
-.pitch-half-left .tactical-mid {
-  grid-row: 3;
-}
-
-.pitch-half-left .tactical-att,
-.pitch-half-left .tactical-extra {
-  grid-column: 2;
-  grid-row: 4;
-}
-
-/* Smartphone: squadra sotto, specchiata */
-.pitch-half-right .tactical-gk {
-  grid-column: 2;
-  grid-row: 4;
-}
-
-.pitch-half-right .tactical-def {
-  grid-row: 3;
-}
-
-.pitch-half-right .tactical-mid {
-  grid-row: 2;
-}
-
-.pitch-half-right .tactical-att,
-.pitch-half-right .tactical-extra {
-  grid-column: 2;
-  grid-row: 1;
-}
 }
