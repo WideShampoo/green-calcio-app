@@ -1117,39 +1117,37 @@ ctx.fillText('VS', vsX, vsY + vsRadius / 2 + 8);
     players.find(p => isGoalkeeperPlayer(p)) ||
     [...players].sort((a, b) => a.rating - b.rating)[0];
 
-  const fieldPlayers = players.filter(p => p.id !== goalkeeper.id);
+  let remaining = players.filter(p => p.id !== goalkeeper?.id);
 
-  const pickForLine = (available, role, count) => {
-    const preferred = available
+  const counts = matchSize === 5
+    ? { def: 1, mid: 2, att: 1 }
+    : { def: 2, mid: 3, att: 1 };
+
+  const pickLine = (role, count) => {
+    const exact = remaining
       .filter(p => getPlayerRoles(p).includes(role))
       .sort((a, b) => b.rating - a.rating);
 
-    const picked = preferred.slice(0, count);
-    const pickedIds = new Set(picked.map(p => p.id));
+    const picked = exact.slice(0, count);
+    remaining = remaining.filter(p => !picked.some(x => x.id === p.id));
 
-    const remainingSlots = count - picked.length;
-
-    if (remainingSlots > 0) {
-      const fallback = available
-        .filter(p => !pickedIds.has(p.id))
+    if (picked.length < count) {
+      const fallback = remaining
         .sort((a, b) => b.rating - a.rating)
-        .slice(0, remainingSlots);
+        .slice(0, count - picked.length);
 
       picked.push(...fallback);
+      remaining = remaining.filter(p => !fallback.some(x => x.id === p.id));
     }
 
     return picked;
   };
 
-  let remaining = [...fieldPlayers];
-
-  const def = pickForLine(remaining, 'DIF', matchSize === 5 ? 1 : 2);
-  remaining = remaining.filter(p => !def.some(x => x.id === p.id));
-
-  const mid = pickForLine(remaining, 'CEN', matchSize === 5 ? 2 : 3);
-  remaining = remaining.filter(p => !mid.some(x => x.id === p.id));
-
-  const att = pickForLine(remaining, 'ATT', fieldPlayers.length - def.length - mid.length);
+  // Priorità tattica: prima ATT, poi CEN, poi DIF.
+  // Così un ATT/CEN viene usato da ATT se manca un attaccante.
+  const att = pickLine('ATT', counts.att);
+  const mid = pickLine('CEN', counts.mid);
+  const def = pickLine('DIF', counts.def);
 
   return {
     gk: goalkeeper ? [goalkeeper] : [],
