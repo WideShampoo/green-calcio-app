@@ -97,10 +97,10 @@ const normalizeRoles = (roles = [], isGoalkeeper = false) => {
 };
 
 const isGoalkeeperPlayer = (player) =>
-  normalizeRoles(player.roles, isGoalkeeperPlayer(player)).includes('POR');
+  normalizeRoles(player?.roles, player?.isGoalkeeper).includes('POR');
 
 const getPlayerRoles = (player) =>
-  normalizeRoles(player.roles, isGoalkeeperPlayer(player));
+  normalizeRoles(player?.roles, player?.isGoalkeeper);
 
 const getRoleLabel = (player) => {
   const roles = getPlayerRoles(player);
@@ -380,8 +380,8 @@ const regularsAvailable = players.filter(p => p.available && !isGoalkeeperPlayer
       name: p.name,
       rating: p.rating,
       available: true,
-      roles: normalizeRoles(p.roles, isGoalkeeperPlayer(p)),
-      isGoalkeeper: normalizeRoles(p.roles, isGoalkeeperPlayer(p)).includes('POR')
+      roles: normalizeRoles(p.roles, p.isGoalkeeper),
+isGoalkeeper: normalizeRoles(p.roles, p.isGoalkeeper).includes('POR')
     }));
 
     setPlayers(formatted);
@@ -513,7 +513,7 @@ const regulars = availablePlayers.filter(p => !isGoalkeeperPlayer(p)).sort(() =>
                 const pB = teamB.players[pBIdx];
 
                 // Impedisci scambi incrociati portiere-regolare per non alterare la distribuzione dei portieri
-                if (pA.isGoalkeeper !== pB.isGoalkeeper) continue;
+                if (isGoalkeeperPlayer(pA) !== isGoalkeeperPlayer(pB)) continue;
 
                 const currentDiff = Math.abs(teamA.ratingSum - teamB.ratingSum);
 
@@ -1092,6 +1092,12 @@ ctx.fillText('VS', vsX, vsY + vsRadius / 2 + 8);
       setToastMessage('');
     }, 3500);
   };
+
+  const getRatingBadgeClass = (rating) => {
+  if (rating >= 8.0) return 'rating-high';
+  if (rating >= 6.0) return 'rating-medium';
+  return 'rating-low';
+};
 
   // Ottieni i giocatori delle due squadre per il campo da calcio
   const pitchTeamA = useMemo(() => {
