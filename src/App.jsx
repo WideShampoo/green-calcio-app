@@ -124,6 +124,57 @@ const togglePlayerRole = (roles = [], role) => {
   return [...withoutPor, role];
 };
 
+// --- COMPONENTE PER INPUT DEL VOTO (RISOLVE IL TRONCAMENTO DEI DECIMALI SU MOBILE) ---
+const RatingInput = ({ value, onChange }) => {
+  const [prevValue, setPrevValue] = useState(value);
+  const [localValue, setLocalValue] = useState(value.toString());
+
+  if (value !== prevValue) {
+    setPrevValue(value);
+    setLocalValue(value.toString());
+  }
+
+  const handleChange = (e) => {
+    const rawVal = e.target.value;
+    setLocalValue(rawVal);
+
+    // Normalizza la virgola in punto decimale (comune tastiere IT)
+    const normalized = rawVal.replace(',', '.');
+    const parsed = parseFloat(normalized);
+
+    if (!isNaN(parsed)) {
+      const clamped = Math.max(1, Math.min(10, parsed));
+      onChange(clamped);
+    }
+  };
+
+  const handleBlur = () => {
+    const normalized = localValue.replace(',', '.');
+    const parsed = parseFloat(normalized);
+    if (!isNaN(parsed)) {
+      const clamped = Math.max(1, Math.min(10, parsed));
+      setLocalValue(clamped.toString());
+      onChange(clamped);
+    } else {
+      setLocalValue(value.toString());
+    }
+  };
+
+  return (
+    <input
+      type="text"
+      inputMode="decimal"
+      pattern="[0-9]*[.,]?[0-9]*"
+      className="form-input"
+      style={{ width: '64px', padding: '4px 6px', fontSize: '0.9rem', textAlign: 'center' }}
+      value={localValue}
+      onChange={handleChange}
+      onBlur={handleBlur}
+    />
+  );
+};
+
+
 // --- LISTA GIOCATORI DI PROVA INIZIALE - 14 GIOCATORI PER MATCH 7 vs 7 ---
 const SAMPLE_PLAYERS = [
   { name: 'Alessandro', rating: 6, roles: ['CEN'] },
@@ -1699,15 +1750,9 @@ const getRoleColor = (role) => {
 
                       <div className="player-actions">
                         {/* Input veloce del voto */}
-                        <input
-                          type="number"
-                          min="1"
-                          max="10"
-                          step="0.5"
-                          className="form-input"
-                          style={{ width: '64px', padding: '4px 6px', fontSize: '0.9rem', textAlign: 'center' }}
+                        <RatingInput
                           value={player.rating}
-                          onChange={(e) => updatePlayerRating(player.id, e.target.value)}
+                          onChange={(val) => updatePlayerRating(player.id, val)}
                         />
 
                         <span className={`rating-badge ${getRatingBadgeClass(player.rating)}`}>
