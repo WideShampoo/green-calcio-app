@@ -680,11 +680,6 @@ const regulars = availablePlayers.filter(p => !isGoalkeeperPlayer(p)).sort(() =>
         return;
       }
 
-      if (selectedPlayerForSwap.teamId === teamId) {
-        setSelectedPlayerForSwap({ teamId, playerIndex });
-        return;
-      }
-
       const newTeams = teams.map(t => ({
         ...t,
         players: [...t.players]
@@ -695,6 +690,18 @@ const regulars = availablePlayers.filter(p => !isGoalkeeperPlayer(p)).sort(() =>
 
       const playerA = teamASource.players[selectedPlayerForSwap.playerIndex];
       const playerB = teamBSource.players[playerIndex];
+
+      if (selectedPlayerForSwap.teamId === teamId) {
+        teamASource.players[selectedPlayerForSwap.playerIndex] = playerB;
+        teamASource.players[playerIndex] = playerA;
+
+        teamASource.ratingSum = getTeamRatingSum(teamASource.players);
+
+        setTeams(newTeams);
+        setSelectedPlayerForSwap(null);
+        showToast(`Ordine aggiornato: ${playerA.name} ⇄ ${playerB.name}`);
+        return;
+      }
 
       teamASource.players[selectedPlayerForSwap.playerIndex] = playerB;
       teamBSource.players[playerIndex] = playerA;
