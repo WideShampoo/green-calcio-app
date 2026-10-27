@@ -15,9 +15,7 @@ const VIDEO_HEIGHT = 1420;
 const VIDEO_DURATION = 30;
 const FPS = 30;
 
-// XXX BLUR VIDEO PERSONALIZZABILE
-// 0 = nitido. 0.9 replica il look vintage della PNG.
-const VIDEO_BLUR_PX = 0.9;
+
 
 // Reveal giocatori.
 const PLAYER_REVEAL_START = 16.0;
@@ -833,12 +831,10 @@ export async function exportFormationVideo({
       renderCtx.fillRect(0, scanY - 25, VIDEO_WIDTH, 50);
     }
 
-    // Blur vintage applicato una sola volta al frame completo.
-    ctx.clearRect(0, 0, VIDEO_WIDTH, VIDEO_HEIGHT);
-    ctx.save();
-    ctx.filter = VIDEO_BLUR_PX > 0 ? `blur(${VIDEO_BLUR_PX}px)` : 'none';
-    ctx.drawImage(renderCanvas, 0, 0);
-    ctx.restore();
+    // Copia il frame finale senza blur.
+// Più leggero e performante soprattutto su smartphone.
+ctx.clearRect(0, 0, VIDEO_WIDTH, VIDEO_HEIGHT);
+ctx.drawImage(renderCanvas, 0, 0);
   };
 
   recorder.start(250);
