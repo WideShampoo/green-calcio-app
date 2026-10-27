@@ -2,8 +2,8 @@
 // Export video 100% frontend tramite Canvas + Web Audio + MediaRecorder.
 //
 // File richiesti in /public:
-//   /blur.wav
-//   /selezione.mp3
+//   /blur.mp3
+//   /selezione.wav
 //   /Dario_Rocchi.webp
 //   /FrecciaGiu.png
 //   /FrecciaSuDestra.png
@@ -14,8 +14,6 @@ const VIDEO_WIDTH = 1400;
 const VIDEO_HEIGHT = 1420;
 const VIDEO_DURATION = 30;
 const FPS = 30;
-
-
 
 // Reveal giocatori.
 const PLAYER_REVEAL_START = 16.0;
@@ -63,12 +61,15 @@ const fetchAudioBuffer = async (audioContext, src) => {
 };
 
 const chooseMimeType = () => {
+  // Prima scelta: MP4/H.264, soprattutto utile su Safari/iPhone.
+  // Se il browser non lo sa registrare, fallback automatico a WebM.
   const candidates = [
+    'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+    'video/mp4;codecs=avc1.42E01E',
+    'video/mp4',
     'video/webm;codecs=vp9,opus',
     'video/webm;codecs=vp8,opus',
-    'video/webm',
-    'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
-    'video/mp4'
+    'video/webm'
   ];
 
   return candidates.find(type =>
@@ -359,11 +360,22 @@ export async function exportFormationVideo({
   balanceMetrics,
   getPlayerRoles,
   isGoalkeeperPlayer,
-  showToast
+  onProgress
 }) {
   if (!blackTeam || !whiteTeam) {
     throw new Error('Servono Team Black e Team White.');
   }
+
+  const reportProgress = (progress, status) => {
+    if (typeof onProgress === 'function') {
+      onProgress({
+        progress: Math.max(0, Math.min(100, Math.round(progress))),
+        status
+      });
+    }
+  };
+
+  reportProgress(2, 'Preparazione canvas e risorse...');
 
   if (
     typeof MediaRecorder === 'undefined' ||
@@ -397,6 +409,8 @@ export async function exportFormationVideo({
   ]);
 
   const arrows = [arrowDown, arrowUpRight, arrowDownRight, arrowUp].filter(Boolean);
+
+  reportProgress(7, 'Immagini caricate. Preparazione audio...');
 
   const blackPlayers = sortPlayers(blackTeam, getPlayerRoles, isGoalkeeperPlayer);
   const whitePlayers = sortPlayers(whiteTeam, getPlayerRoles, isGoalkeeperPlayer);
@@ -450,6 +464,8 @@ export async function exportFormationVideo({
     await audioContext.close();
     throw new Error('Controlla che /blur.mp3 e /selezione.wav siano presenti nella cartella public.');
   }
+
+  reportProgress(10, 'Audio pronto. Avvio registrazione...');
 
   const audioDestination = audioContext.createMediaStreamDestination();
 
@@ -831,10 +847,9 @@ export async function exportFormationVideo({
       renderCtx.fillRect(0, scanY - 25, VIDEO_WIDTH, 50);
     }
 
-    // Copia il frame finale senza blur.
-// Più leggero e performante soprattutto su smartphone.
-ctx.clearRect(0, 0, VIDEO_WIDTH, VIDEO_HEIGHT);
-ctx.drawImage(renderCanvas, 0, 0);
+    // Copia diretta del frame: niente blur per-frame, molto più leggero su smartphone.
+    ctx.clearRect(0, 0, VIDEO_WIDTH, VIDEO_HEIGHT);
+    ctx.drawImage(renderCanvas, 0, 0);
   };
 
   recorder.start(250);
@@ -864,6 +879,10 @@ ctx.drawImage(renderCanvas, 0, 0);
       const elapsed = (now - performanceStart) / 1000;
       renderFrame(Math.min(elapsed, VIDEO_DURATION));
 
+      // 10% preparazione + 85% durante i 20 secondi di rendering.
+      const renderPercent = 10 + (Math.min(elapsed, VIDEO_DURATION) / VIDEO_DURATION) * 85;
+      reportProgress(renderPercent, `Registrazione video... ${Math.min(elapsed, VIDEO_DURATION).toFixed(1)} / ${VIDEO_DURATION.toFixed(0)} s`);
+
       if (elapsed < VIDEO_DURATION) {
         requestAnimationFrame(tick);
       } else {
@@ -878,6 +897,7 @@ ctx.drawImage(renderCanvas, 0, 0);
   // Piccolo margine per consegnare l'ultimo frame al recorder.
   await new Promise(resolve => setTimeout(resolve, 120));
 
+  reportProgress(96, 'Finalizzazione del file video...');
   recorder.stop();
   await recordingDone;
 
@@ -893,15 +913,45 @@ ctx.drawImage(renderCanvas, 0, 0);
     ? 'black-vs-white-reveal.mp4'
     : 'black-vs-white-reveal.webm';
 
-  downloadBlob(blob, filename);
+  reportProgress(98, isMp4 ? 'MP4 pronto. Apertura condivisione...' : 'Video pronto. Apertura condivisione...');
 
-  if (showToast) {
-    showToast(
-      isMp4
-        ? 'Video MP4 scaricato! 🎬'
-        : 'Video scaricato in WebM (formato supportato dal browser) 🎬'
-    );
+  const file = new File([blob], filename, { type: actualType });
+  let shared = false;
+
+  // Su iPhone/iPad il foglio di condivisione permette di scegliere "Salva video".
+  // Non è possibile selezionare quell'opzione automaticamente dal browser.
+  try {
+    if (
+      navigator.share &&
+      navigator.canShare &&
+      navigator.canShare({ files: [file] })
+    ) {
+      await navigator.share({
+        files: [file],
+        title: 'Green Calcio',
+        text: 'Black Team vs White Team'
+      });
+      shared = true;
+    }
+  } catch (shareError) {
+    // Se l'utente chiude il foglio di condivisione non forziamo un secondo download.
+    if (shareError?.name === 'AbortError') {
+      reportProgress(100, 'Condivisione annullata. Puoi premere di nuovo Scarica Video.');
+      return { blob, filename, mimeType: actualType, shared: false, cancelled: true };
+    }
+    console.warn('Condivisione nativa non disponibile:', shareError);
   }
 
-  return { blob, filename, mimeType: actualType };
+  if (!shared) {
+    downloadBlob(blob, filename);
+  }
+
+  reportProgress(
+    100,
+    shared
+      ? 'Video pronto. Su iPhone scegli “Salva video” per aggiungerlo a Foto.'
+      : `Video ${isMp4 ? 'MP4' : 'WebM'} scaricato.`
+  );
+
+  return { blob, filename, mimeType: actualType, shared };
 }

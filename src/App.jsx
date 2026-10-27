@@ -231,6 +231,9 @@ function App() {
   });
 
   const [toastMessage, setToastMessage] = useState('');
+  const [isGeneratingVideo, setIsGeneratingVideo] = useState(false);
+  const [videoProgress, setVideoProgress] = useState(0);
+  const [videoStatus, setVideoStatus] = useState('');
   const [selectedPlayerForSwap, setSelectedPlayerForSwap] = useState(null); // { teamId, playerId }
 
   // Selezione per la visualizzazione sul campo da calcio
@@ -1295,25 +1298,44 @@ const drawSecondaryTags = (player, x, y, right = false) => {
 
   // --- EXPORT VIDEO FORMAZIONE STILE PES ---
   const handleDownloadVideo = async () => {
-    if (!teams || teams.length < 2) return;
+    if (!teams || teams.length < 2 || isGeneratingVideo) return;
 
     const blackTeam = teams.find(t => t.name.toLowerCase().includes('black')) || teams[0];
     const whiteTeam = teams.find(t => t.name.toLowerCase().includes('white')) || teams[1];
 
-    try {
-      showToast('Preparazione video in corso... 🎬');
+    setIsGeneratingVideo(true);
+    setVideoProgress(0);
+    setVideoStatus('Preparazione risorse...');
 
-      await exportFormationVideo({
+    try {
+      const result = await exportFormationVideo({
         blackTeam,
         whiteTeam,
         balanceMetrics,
         getPlayerRoles,
         isGoalkeeperPlayer,
-        showToast
+        onProgress: ({ progress, status }) => {
+          setVideoProgress(progress);
+          setVideoStatus(status);
+        }
       });
+
+      setVideoProgress(100);
+      setVideoStatus(
+        result?.shared
+          ? 'Video pronto: scegli “Salva video” nel menu di condivisione.'
+          : 'Video pronto!'
+      );
+
+      if (!result?.shared) {
+        showToast('Video generato! 🎬');
+      }
     } catch (error) {
       console.error('Errore esportazione video:', error);
+      setVideoStatus(error?.message || 'Errore durante la generazione del video');
       showToast(error?.message || 'Errore durante la generazione del video');
+    } finally {
+      setIsGeneratingVideo(false);
     }
   };
 
@@ -1750,6 +1772,46 @@ const getRoleColor = (role) => {
         <div className="toast">
           <IconSoccer />
           <span>{toastMessage}</span>
+        </div>
+      )}
+
+      {/* Stato persistente generazione video */}
+      {(isGeneratingVideo || videoProgress === 100) && (
+        <div
+          style={{
+            position: 'fixed',
+            left: '50%',
+            bottom: '22px',
+            transform: 'translateX(-50%)',
+            width: 'min(92vw, 460px)',
+            zIndex: 99999,
+            padding: '14px 16px',
+            borderRadius: '14px',
+            background: 'rgba(8, 10, 9, 0.96)',
+            border: '1px solid rgba(255,255,255,0.14)',
+            boxShadow: '0 14px 45px rgba(0,0,0,0.45)',
+            color: '#fff'
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', marginBottom: '9px', fontWeight: 800 }}>
+            <span>{isGeneratingVideo ? '🎬 Generazione video' : '✅ Video completato'}</span>
+            <span>{videoProgress}%</span>
+          </div>
+
+          <div style={{ height: '8px', background: 'rgba(255,255,255,0.12)', borderRadius: '999px', overflow: 'hidden' }}>
+            <div
+              style={{
+                height: '100%',
+                width: `${videoProgress}%`,
+                background: '#f97316',
+                transition: 'width 180ms linear'
+              }}
+            />
+          </div>
+
+          <div style={{ marginTop: '8px', fontSize: '0.78rem', color: 'rgba(255,255,255,0.72)', lineHeight: 1.35 }}>
+            {videoStatus || 'Non chiudere questa pagina durante la generazione.'}
+          </div>
         </div>
       )}
 
@@ -2192,9 +2254,11 @@ const getRoleColor = (role) => {
                   type="button"
                   className="btn btn-secondary"
                   onClick={handleDownloadVideo}
+                  disabled={isGeneratingVideo}
                   title="Genera il video formazione con musica e reveal"
+                  style={{ opacity: isGeneratingVideo ? 0.65 : 1 }}
                 >
-                  🎬 Scarica Video
+                  {isGeneratingVideo ? `🎬 Generazione ${videoProgress}%` : '🎬 Scarica Video'}
                 </button>
                 <button
                   type="button"
