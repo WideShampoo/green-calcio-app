@@ -954,7 +954,10 @@ const drawSecondaryTags = (player, x, y, right = false) => {
     ctx.fillStyle = bg; ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     const tableX = 28, tableY = 28, tableW = canvas.width - 56;
-    const headerH = 76, rowH = 92;
+    const headerH = 76;
+    // XXX ALTEZZA CELLE PERSONALIZZABILE
+    // Più basso = meno spazio sopra/sotto i giocatori. 72 è compatto ma leggibile.
+    const rowH = 72;
     const rows = Math.max(blackPlayers.length, whitePlayers.length);
     const halfW = tableW / 2, midX = tableX + halfW;
     const bodyTop = tableY + headerH;
@@ -1108,13 +1111,20 @@ const drawSecondaryTags = (player, x, y, right = false) => {
       const boxX = centerX - boxW / 2;
       const boxY = centerY - boxH / 2;
 
-      // Cornice nera rettangolare come nella schermata PES.
-      ctx.fillStyle = '#050605';
+      // Sfondo radar grigio metallico: abbastanza chiaro da mostrare bene
+      // sia il profilo nero del BLACK TEAM sia quello bianco del WHITE TEAM.
+      const radarBackground = ctx.createLinearGradient(boxX, boxY, boxX, boxY + boxH);
+      radarBackground.addColorStop(0, '#8a8f8d');
+      radarBackground.addColorStop(0.48, '#747977');
+      radarBackground.addColorStop(1, '#626765');
+      ctx.fillStyle = radarBackground;
       ctx.fillRect(boxX, boxY, boxW, boxH);
-      ctx.strokeStyle = '#111311';
+
+      // Cornice esterna scura + sottile cornice interna chiara, stile PES.
+      ctx.strokeStyle = '#181a19';
       ctx.lineWidth = 7;
       ctx.strokeRect(boxX, boxY, boxW, boxH);
-      ctx.strokeStyle = '#777b77';
+      ctx.strokeStyle = '#c2c6c3';
       ctx.lineWidth = 2;
       ctx.strokeRect(boxX + 7, boxY + 7, boxW - 14, boxH - 14);
 
@@ -1227,6 +1237,28 @@ const drawSecondaryTags = (player, x, y, right = false) => {
     ctx.textAlign = 'right';
     ctx.fillText('BLACK TEAM  vs  WHITE TEAM', tableX + tableW, canvas.height - 22);
 
+    // XXX BLUR PERSONALIZZABILE
+    // Valore in pixel. 0 = nessuna sfocatura.
+    // Consigliati: 0.3 molto lieve, 0.6 vintage leggero, 1.0 più marcato.
+    const vintageBlurPx = 0.9;
+
+    if (vintageBlurPx > 0) {
+      const blurCanvas = document.createElement('canvas');
+      blurCanvas.width = canvas.width;
+      blurCanvas.height = canvas.height;
+
+      const blurCtx = blurCanvas.getContext('2d');
+
+      // Copia l'immagine già completa applicando il blur una sola volta.
+      blurCtx.filter = `blur(${vintageBlurPx}px)`;
+      blurCtx.drawImage(canvas, 0, 0);
+      blurCtx.filter = 'none';
+
+      // Riporta il risultato sfocato sul canvas finale.
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(blurCanvas, 0, 0);
+    }
+
     canvas.toBlob(async (blob) => {
       if (!blob) return;
       const file = new File([blob], 'black-vs-white.png', { type:'image/png' });
@@ -1235,14 +1267,26 @@ const drawSecondaryTags = (player, x, y, right = false) => {
           await navigator.share({ files:[file], title:'Green Calcio', text:'Black Team vs White Team' });
           showToast('Immagine pronta per la condivisione! 📲');
         } else {
-          const link = document.createElement('a'); link.download='black-vs-white.png';
-          link.href=URL.createObjectURL(blob); link.click(); URL.revokeObjectURL(link.href);
+          const link = document.createElement('a');
+          const url = URL.createObjectURL(blob);
+          link.download = 'black-vs-white.png';
+          link.href = url;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
           showToast('Immagine black-vs-white.png scaricata! 📸');
         }
       } catch (error) {
         console.error('Errore condivisione/download:', error);
-        const link=document.createElement('a'); link.download='black-vs-white.png';
-        link.href=URL.createObjectURL(blob); link.click(); URL.revokeObjectURL(link.href);
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.download = 'black-vs-white.png';
+        link.href = url;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
       }
     }, 'image/png');
   };
