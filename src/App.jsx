@@ -230,7 +230,7 @@ function App() {
   });
 
   const [toastMessage, setToastMessage] = useState('');
-  const [selectedPlayerForSwap, setSelectedPlayerForSwap] = useState(null); // { teamId, playerIndex }
+  const [selectedPlayerForSwap, setSelectedPlayerForSwap] = useState(null); // { teamId, playerId }
 
   // Selezione per la visualizzazione sul campo da calcio
   const [pitchTeamAId, setPitchTeamAId] = useState(1);
@@ -665,55 +665,71 @@ const regulars = availablePlayers.filter(p => !isGoalkeeperPlayer(p)).sort(() =>
       }
     }
 
-    setTeams(bestTeams);
+    const teamsWithTacticalSlots = bestTeams.map(team => applyTacticalSlots(team));
+    setTeams(teamsWithTacticalSlots);
     setSelectedPlayerForSwap(null);
     showToast("Squadre generate in modo bilanciato! ⚽");
   };
 
   // --- FUNZIONE PER LO SCAMBIO MANUALE RAPIDO ---
+  // La selezione usa l'ID del giocatore, non l'indice dell'array.
+  // Questo evita che dopo il primo swap un indice ormai cambiato faccia muovere
+  // anche un altro elemento dell'anteprima, soprattutto sul Team White.
   const handleSelectForSwap = (teamId, playerIndex) => {
+    const sourceTeam = teams.find(t => t.id === teamId);
+    const clickedPlayer = sourceTeam?.players[playerIndex];
+    if (!sourceTeam || !clickedPlayer) return;
+
     if (selectedPlayerForSwap === null) {
-      setSelectedPlayerForSwap({ teamId, playerIndex });
-    } else {
-      if (selectedPlayerForSwap.teamId === teamId && selectedPlayerForSwap.playerIndex === playerIndex) {
-        setSelectedPlayerForSwap(null);
-        return;
-      }
-
-      const newTeams = teams.map(t => ({
-        ...t,
-        players: [...t.players]
-      }));
-
-      const teamASource = newTeams.find(t => t.id === selectedPlayerForSwap.teamId);
-      const teamBSource = newTeams.find(t => t.id === teamId);
-
-      const playerA = teamASource.players[selectedPlayerForSwap.playerIndex];
-      const playerB = teamBSource.players[playerIndex];
-
-      if (selectedPlayerForSwap.teamId === teamId) {
-        teamASource.players[selectedPlayerForSwap.playerIndex] = playerB;
-        teamASource.players[playerIndex] = playerA;
-
-        teamASource.ratingSum = getTeamRatingSum(teamASource.players);
-
-        setTeams(newTeams);
-        setSelectedPlayerForSwap(null);
-        showToast(`Ordine aggiornato: ${playerA.name} ⇄ ${playerB.name}`);
-        return;
-      }
-
-      teamASource.players[selectedPlayerForSwap.playerIndex] = playerB;
-      teamBSource.players[playerIndex] = playerA;
-
-      // Ricalcola le somme dei rating includendo il bonus +2 portieri
-      teamASource.ratingSum = getTeamRatingSum(teamASource.players);
-      teamBSource.ratingSum = getTeamRatingSum(teamBSource.players);
-
-      setTeams(newTeams);
-      setSelectedPlayerForSwap(null);
-      showToast(`Scambio effettuato: ${playerA.name} ⇄ ${playerB.name}`);
+      setSelectedPlayerForSwap({ teamId, playerId: clickedPlayer.id });
+      return;
     }
+
+    if (selectedPlayerForSwap.teamId === teamId && selectedPlayerForSwap.playerId === clickedPlayer.id) {
+      setSelectedPlayerForSwap(null);
+      return;
+    }
+
+    const newTeams = teams.map(t => ({
+      ...t,
+      players: t.players.map(p => ({ ...p }))
+    }));
+
+    const teamA = newTeams.find(t => t.id === selectedPlayerForSwap.teamId);
+    const teamB = newTeams.find(t => t.id === teamId);
+    if (!teamA || !teamB) {
+      setSelectedPlayerForSwap(null);
+      return;
+    }
+
+    const indexA = teamA.players.findIndex(p => p.id === selectedPlayerForSwap.playerId);
+    const indexB = teamB.players.findIndex(p => p.id === clickedPlayer.id);
+    if (indexA < 0 || indexB < 0) {
+      setSelectedPlayerForSwap(null);
+      return;
+    }
+
+    const playerA = teamA.players[indexA];
+    const playerB = teamB.players[indexB];
+    const slotA = { tacticalLine: playerA.tacticalLine, tacticalSlot: playerA.tacticalSlot };
+    const slotB = { tacticalLine: playerB.tacticalLine, tacticalSlot: playerB.tacticalSlot };
+
+    if (teamA.id === teamB.id) {
+      teamA.players[indexA] = { ...playerB, ...slotA };
+      teamA.players[indexB] = { ...playerA, ...slotB };
+      teamA.ratingSum = getTeamRatingSum(teamA.players);
+    } else {
+      // Ogni lato conserva esclusivamente il proprio slot tattico.
+      // Il giocatore che arriva prende lo slot della persona sostituita.
+      teamA.players[indexA] = { ...playerB, ...slotA };
+      teamB.players[indexB] = { ...playerA, ...slotB };
+      teamA.ratingSum = getTeamRatingSum(teamA.players);
+      teamB.ratingSum = getTeamRatingSum(teamB.players);
+    }
+
+    setTeams(newTeams);
+    setSelectedPlayerForSwap(null);
+    showToast(`Scambio effettuato: ${playerA.name} ⇄ ${playerB.name}`);
   };
 
   // --- CALCOLO METRICHE DI BILANCIAMENTO ---
@@ -773,375 +789,460 @@ const regulars = availablePlayers.filter(p => !isGoalkeeperPlayer(p)).sort(() =>
       });
   };
 
-  // --- DOWNLOAD IMMAGINE FORMAZIONI (DYNAMIC CANVAS RENDER) ---
+  // --- DOWNLOAD IMMAGINE FORMAZIONI: TABELLONE RETRO BLACK / WHITE ---
   const handleDownloadImage = async () => {
-    if (!teams || teams.length === 0) return;
+    if (!teams || teams.length < 2) return;
 
     const canvas = document.createElement('canvas');
-    // Se ci sono 2 squadre usiamo il layout specifico orizzontale a 2 colonne.
-    // Altrimenti creiamo un layout che si allarga a seconda delle squadre.
-    const isTwoTeams = teams.length === 2;
-
-    const canvasWidth = isTwoTeams ? 1200 : 80 + teams.length * 280;
-    const canvasHeight = 1050;
-
-    canvas.width = canvasWidth;
-    canvas.height = canvasHeight;
+    canvas.width = 1400;
+    canvas.height = 1420;
     const ctx = canvas.getContext('2d');
-    const loadImage = (src) => {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => resolve(img);
-    img.onerror = reject;
-    img.src = src;
+
+    const loadImage = (src) => new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
+    const safeLoadImage = async (src) => {
+      try { return await loadImage(src); } catch (error) { console.warn(`Impossibile caricare ${src}`, error); return null; }
+    };
+
+    const arrowFiles = ['/FrecciaGiu.png','/FrecciaSuDestra.png','/FrecciaGiuDestra.png','/FrecciaSu.png'];
+    const [darioLogo, ...arrowImages] = await Promise.all([
+      safeLoadImage('/Dario_Rocchi.webp'),
+      ...arrowFiles.map(safeLoadImage)
+    ]);
+
+    const randomArrowByPlayer = new Map();
+    teams.slice(0, 2).forEach(team => team.players.forEach(player => {
+      const available = arrowImages.filter(Boolean);
+      randomArrowByPlayer.set(player.id, available.length ? available[Math.floor(Math.random() * available.length)] : null);
+    }));
+
+    const blackTeam = teams.find(t => t.name.toLowerCase().includes('black')) || teams[0];
+    const whiteTeam = teams.find(t => t.name.toLowerCase().includes('white')) || teams[1];
+
+    const primaryRole = (p) => isGoalkeeperPlayer(p) ? 'POR' : (getPlayerRoles(p)[0] || 'AUTO');
+
+    // Ordine grafico fisso: PT -> DI -> CC -> AT.
+    // Non modifica le squadre reali: cambia soltanto l'ordine nella PNG esportata.
+    const roleOrder = { POR: 0, DIF: 1, CEN: 2, ATT: 3, AUTO: 4 };
+    const sortPlayersForGraphic = (team) => [...team.players].sort((a, b) => {
+      const roleDiff = (roleOrder[primaryRole(a)] ?? 99) - (roleOrder[primaryRole(b)] ?? 99);
+      if (roleDiff !== 0) return roleDiff;
+      return a.name.localeCompare(b.name, 'it', { sensitivity: 'base' });
+    });
+
+    const blackPlayers = sortPlayersForGraphic(blackTeam);
+    const whitePlayers = sortPlayersForGraphic(whiteTeam);
+    const roleCode = (p) => ({ POR:'PT', DIF:'DI', CEN:'CC', ATT:'AT' }[primaryRole(p)] || '--');
+    const roleBorder = (role) => ({ POR:'#e4cf25', DIF:'#2988b8', CEN:'#31a35b', ATT:'#d74b48' }[role] || '#888');
+    const oldFont = 'Consolas, "Courier New", monospace';
+    // XXX PERSONALIZZARE XXX - stretch orizzontale dei nomi (1.08 = +8%)
+    const playerNameStretchX = 1.08;
+
+    const drawStretchedText = (text, x, y, stretchX = 1, align = 'left') => {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(stretchX, 1);
+      ctx.textAlign = align;
+      ctx.fillText(text, 0, 0);
+      ctx.restore();
+    };
+
+    const fitName = (name, maxWidth, font) => {
+      ctx.font = font;
+      if (ctx.measureText(name).width <= maxWidth) return name;
+      let text = name;
+      while (text.length > 1 && ctx.measureText(`${text}…`).width > maxWidth) text = text.slice(0, -1);
+      return `${text}…`;
+    };
+
+    const drawRoleBox = (player, x, cy, right = false) => {
+  const role = primaryRole(player);
+  const code = roleCode(player);
+
+  const w = 72;
+  const h = 44;
+
+  const bx = right ? x - w : x;
+  const by = cy - h / 2;
+
+  // Sfondo nero
+  ctx.fillStyle = '#080a09';
+  ctx.fillRect(bx, by, w, h);
+
+  // SOLO bordo inferiore colorato in base al ruolo
+  ctx.strokeStyle = roleBorder(role);
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.moveTo(bx, by + h - 2.5);
+  ctx.lineTo(bx + w, by + h - 2.5);
+  ctx.stroke();
+
+  // Testo ruolo grande, bold e quasi a tutta altezza
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '900 36px "Arial Black", Impact, Arial, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  ctx.fillText(
+    code,
+    bx + w / 2,
+    cy - 1,
+    w - 4
+  );
+};
+
+
+const drawSecondaryTags = (player, x, y, right = false) => {
+  const main = primaryRole(player);
+  const secondary = getPlayerRoles(player).filter(r => r !== main);
+
+  let cursor = x;
+
+  secondary.forEach(role => {
+    const label = (
+      {
+        POR: 'PT',
+        DIF: 'DI',
+        CEN: 'CC',
+        ATT: 'AT'
+      }[role] || role
+    );
+
+    const w = 34;
+    const h = 20;
+
+    const bx = right ? cursor - w : cursor;
+    const by = y - h / 2;
+
+    // Sfondo nero
+    ctx.fillStyle = '#080a09';
+    ctx.fillRect(bx, by, w, h);
+
+    // SOLO bordo inferiore colorato in base al ruolo
+    ctx.strokeStyle = roleBorder(role);
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(bx, by + h - 1.5);
+    ctx.lineTo(bx + w, by + h - 1.5);
+    ctx.stroke();
+
+    // Testo grande, bold e compatto
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '900 17px "Arial Black", Impact, Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    ctx.fillText(
+      label,
+      bx + w / 2,
+      y - 1,
+      w - 2
+    );
+
+    // Posizionamento del tag successivo
+    cursor += right ? -(w + 5) : (w + 5);
   });
 };
 
-let vsLogo = null;
+    // Fondo metallico/grigio da vecchio tabellone.
+    const bg = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    bg.addColorStop(0, '#b9bdb9'); bg.addColorStop(.5, '#eceeeb'); bg.addColorStop(1, '#a9ada9');
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-try {
-  vsLogo = await loadImage('/Dario_Rocchi.webp');
-} catch (error) {
-  console.error('Errore caricamento immagine VS:', error);
-}
+    const tableX = 28, tableY = 28, tableW = canvas.width - 56;
+    const headerH = 76, rowH = 92;
+    const rows = Math.max(blackPlayers.length, whitePlayers.length);
+    const halfW = tableW / 2, midX = tableX + halfW;
+    const bodyTop = tableY + headerH;
 
-    // 1. Sfondo - Sfumatura stadio notturno/lavagna tattica verde scuro
-    const bgGrad = ctx.createRadialGradient(canvasWidth / 2, canvasHeight / 2, 50, canvasWidth / 2, canvasHeight / 2, canvasWidth);
-    bgGrad.addColorStop(0, '#102d1d'); // Deep green
-    bgGrad.addColorStop(1, '#070a09'); // Coal dark
-    ctx.fillStyle = bgGrad;
-    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+    // Testate lucide con gradiente e bordatura PES.
+    const blackGrad = ctx.createLinearGradient(tableX, tableY, midX, tableY + headerH);
+    blackGrad.addColorStop(0, '#111'); blackGrad.addColorStop(.48, '#3a3a38'); blackGrad.addColorStop(1, '#090909');
+    ctx.fillStyle = blackGrad; ctx.fillRect(tableX, tableY, halfW, headerH);
+    const whiteGrad = ctx.createLinearGradient(midX, tableY, tableX + tableW, tableY + headerH);
+    whiteGrad.addColorStop(0, '#d7d8d4'); whiteGrad.addColorStop(.5, '#fafbf7'); whiteGrad.addColorStop(1, '#b9bbb7');
+    ctx.fillStyle = whiteGrad; ctx.fillRect(midX, tableY, halfW, headerH);
 
-    // Disegna cerchi e linee del campo stilizzati
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(canvasWidth / 2, canvasHeight / 2 + 30, 150, 0, Math.PI * 2);
-    ctx.stroke();
+    // Highlight lucido superiore.
+    const shine = ctx.createLinearGradient(0, tableY, 0, tableY + headerH);
+    shine.addColorStop(0, 'rgba(255,255,255,.48)'); shine.addColorStop(.42, 'rgba(255,255,255,.08)'); shine.addColorStop(.5, 'rgba(255,255,255,0)');
+    ctx.fillStyle = shine; ctx.fillRect(tableX, tableY, tableW, headerH);
+    ctx.strokeStyle = '#252827'; ctx.lineWidth = 4; ctx.strokeRect(tableX, tableY, tableW, headerH + rows * rowH);
+    ctx.strokeStyle = 'rgba(255,255,255,.65)'; ctx.lineWidth = 2; ctx.strokeRect(tableX + 4, tableY + 4, tableW - 8, headerH - 8);
 
-    ctx.beginPath();
-    ctx.moveTo(canvasWidth / 2, 120);
-    ctx.lineTo(canvasWidth / 2, canvasHeight - 90);
-    ctx.stroke();
+    ctx.textBaseline = 'middle';
+    ctx.font = `bold 39px ${oldFont}`;
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.fillText('BLACK TEAM', tableX + 22, tableY + headerH/2 + 2);
+    ctx.fillStyle = '#222'; ctx.textAlign = 'right'; ctx.fillText('WHITE TEAM', tableX + tableW - 22, tableY + headerH/2 + 2);
 
-    // 2. Titolo e Intestazione
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 38px Outfit, sans-serif';
-    ctx.fillText('GREEN CALCIO', canvasWidth / 2, 60);
+    // Corpo tabella e righe.
+    for (let i=0; i<rows; i++) {
+      const y = bodyTop + i * rowH;
+      // Gradienti orizzontali speculari in stile vecchia schermata PES:
+      // BLACK (sinistra): più chiaro all'esterno -> più scuro verso il centro.
+      // WHITE (destra): più scuro verso il centro -> più chiaro all'esterno.
+      const leftRowGrad = ctx.createLinearGradient(tableX, y, midX, y);
+      leftRowGrad.addColorStop(0, i % 2 === 0 ? '#f1f2ef' : '#e3e5e1');
+      leftRowGrad.addColorStop(0.58, i % 2 === 0 ? '#e4e6e2' : '#d9dcd7');
+      leftRowGrad.addColorStop(1, i % 2 === 0 ? '#c9ccc8' : '#c3c6c2');
+      ctx.fillStyle = leftRowGrad;
+      ctx.fillRect(tableX, y, halfW, rowH);
 
-    ctx.fillStyle = '#10b981';
-    ctx.font = '600 18px Outfit, sans-serif';
-    ctx.fillText('FORMAZIONI UFFICIALI • BILANCIAMENTO SQUADRE', canvasWidth / 2, 90);
+      const rightRowGrad = ctx.createLinearGradient(midX, y, tableX + tableW, y);
+      rightRowGrad.addColorStop(0, i % 2 === 0 ? '#c9ccc8' : '#c3c6c2');
+      rightRowGrad.addColorStop(0.42, i % 2 === 0 ? '#e4e6e2' : '#d9dcd7');
+      rightRowGrad.addColorStop(1, i % 2 === 0 ? '#f1f2ef' : '#e3e5e1');
+      ctx.fillStyle = rightRowGrad;
+      ctx.fillRect(midX, y, halfW, rowH);
+      ctx.strokeStyle = '#555a58'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(tableX, y); ctx.lineTo(tableX + tableW, y); ctx.stroke();
+      // sottile luce interna come nelle vecchie UI
+      ctx.strokeStyle = 'rgba(255,255,255,.72)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(tableX+2, y+3); ctx.lineTo(tableX+tableW-2, y+3); ctx.stroke();
 
-    // 3. Disegna le colonne delle squadre
-    if (isTwoTeams) {
-      // --- SFIDA CLASSICA: TEAM BLACK vs TEAM WHITE ---
-      const t1 = teams[0];
-      const t2 = teams[1];
-
-      // A. TEAM BLACK (Card Sfondo Slate 900)
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.roundRect(100, 130, 460, 640, 20);
-      ctx.fill();
-      ctx.stroke();
-
-      // Intestazione
-      ctx.fillStyle = '#f1f5f9';
-      ctx.font = 'bold 30px Outfit, sans-serif';
-      ctx.fillText(t1.name.toUpperCase(), 330, 185);
-      const t1Avg = t1.players.length > 0 ? (t1.ratingSum / t1.players.length).toFixed(1) : '0.0';
-      const t1Odds = t1Avg !== '0.0' ? (10 / parseFloat(t1Avg)).toFixed(2) : 'N/A';
-      ctx.fillStyle = '#94a3b8';
-      ctx.font = '16px Outfit, sans-serif';
-      ctx.fillText(`Media: ${t1Avg}`, 330, 215);
-
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
-      ctx.beginPath();
-      ctx.moveTo(130, 235);
-      ctx.lineTo(530, 235);
-      ctx.stroke();
-
-      // Giocatori Team Black
-      t1.players.forEach((p, idx) => {
-        const y = 280 + idx * 62;
-        // Sfondo alternato per riga
-        if (idx % 2 === 0) {
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.02)';
-          ctx.beginPath();
-          ctx.roundRect(130, y - 24, 400, 44, 8);
-          ctx.fill();
-        }
-
-        // Jersey / Ruolo
-        if (isGoalkeeperPlayer(p)) {
-          ctx.fillStyle = 'rgba(249, 115, 22, 0.2)';
-          ctx.beginPath();
-          ctx.arc(155, y - 4, 16, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = '#f97316';
-          ctx.font = '14px Outfit, sans-serif';
-          ctx.fillText('🧤', 155, y + 1);
-        } else {
-          ctx.fillStyle = 'rgba(16, 185, 129, 0.15)';
-          ctx.beginPath();
-          ctx.arc(155, y - 4, 16, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = '#10b981';
-          ctx.font = 'bold 15px Outfit, sans-serif';
-          ctx.fillText(`${idx + 1}`, 155, y + 1);
-        }
-
-        // Nome
+      const lp = blackPlayers[i];
+      if (lp) {
+        const cy = y + rowH/2;
+        drawRoleBox(lp, tableX + 12, cy);
+        ctx.fillStyle = '#181a19';
         ctx.textAlign = 'left';
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '600 19px Outfit, sans-serif';
-        let nameTxt = p.name;
-ctx.fillText(nameTxt, 188, y + 3);
-drawRolePills(ctx, getPlayerRoles(p), 188 + ctx.measureText(nameTxt).width + 10, y - 13);
-
-        // Rating
-        ctx.textAlign = 'right';
-        ctx.font = 'bold 19px Outfit, sans-serif';
-        // Rating display removed per user request
-        // if (p.rating >= 8) ctx.fillStyle = '#10b981';
-        // else if (p.rating >= 6) ctx.fillStyle = '#f59e0b';
-        // else ctx.fillStyle = '#ef4444';
-        // ctx.fillText(p.rating.toFixed(1), 510, y + 3);
-      });
-
-      // B. TEAM WHITE (Card Sfondo Slate 50)
-      ctx.textAlign = 'center';
-      ctx.fillStyle = 'rgba(248, 250, 252, 0.95)';
-      ctx.strokeStyle = 'rgba(15, 23, 42, 0.05)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.roundRect(640, 130, 460, 640, 20);
-      ctx.fill();
-      ctx.stroke();
-
-      // Intestazione
-      ctx.fillStyle = '#0f172a';
-      ctx.font = 'bold 30px Outfit, sans-serif';
-      ctx.fillText(t2.name.toUpperCase(), 870, 185);
-      const t2Avg = t2.players.length > 0 ? (t2.ratingSum / t2.players.length).toFixed(1) : '0.0';
-      const t2Odds = t2Avg !== '0.0' ? (10 / parseFloat(t2Avg)).toFixed(2) : 'N/A';
-      ctx.fillStyle = '#475569';
-      ctx.font = '16px Outfit, sans-serif';
-      ctx.fillText(`Media: ${t2Avg}`, 870, 215);
-
-      ctx.strokeStyle = 'rgba(15, 23, 42, 0.08)';
-      ctx.beginPath();
-      ctx.moveTo(670, 255);
-      ctx.lineTo(1070, 255);
-      ctx.stroke();
-
-      // Giocatori Team White
-      t2.players.forEach((p, idx) => {
-        const y = 280 + idx * 62;
-        if (idx % 2 === 0) {
-          ctx.fillStyle = 'rgba(15, 23, 42, 0.03)';
-          ctx.beginPath();
-          ctx.roundRect(670, y - 24, 400, 44, 8);
-          ctx.fill();
-        }
-
-        if (isGoalkeeperPlayer(p)) {
-          ctx.fillStyle = 'rgba(249, 115, 22, 0.2)';
-          ctx.beginPath();
-          ctx.arc(695, y - 4, 16, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = '#f97316';
-          ctx.font = '14px Outfit, sans-serif';
-          ctx.fillText('🧤', 695, y + 1);
-        } else {
-          ctx.fillStyle = 'rgba(15, 23, 42, 0.08)';
-          ctx.beginPath();
-          ctx.arc(695, y - 4, 16, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = '#0f172a';
-          ctx.font = 'bold 15px Outfit, sans-serif';
-          ctx.fillText(`${idx + 1}`, 695, y + 1);
-        }
-
-        ctx.textAlign = 'left';
-        ctx.fillStyle = '#0f172a';
-        ctx.font = '600 19px Outfit, sans-serif';
-        let nameTxt = p.name;
-ctx.fillText(nameTxt, 728, y + 3);
-drawRolePills(ctx, getPlayerRoles(p), 728 + ctx.measureText(nameTxt).width + 10, y - 13);
-
-        ctx.textAlign = 'right';
-        ctx.font = 'bold 19px Outfit, sans-serif';
-        if (p.rating >= 8) ctx.fillStyle = '#047857';
-        else if (p.rating >= 6) ctx.fillStyle = '#d97706';
-        else ctx.fillStyle = '#b91c1c';
-        // ctx.fillText(p.rating.toFixed(1), 1050, y + 3);
-      });
-
-      // C. Cerchio Centrale "VS"
-const vsX = 600;
-const vsY = 430;
-const vsRadius = 36;
-
-// Immagine sopra il bollino VS
-if (vsLogo) {
-  const imgSize = vsRadius * 2;
-  const imgX = vsX - imgSize / 2;
-  const imgY = vsY - imgSize / 2 - 45;
-
-  ctx.drawImage(vsLogo, imgX, imgY, imgSize, imgSize);
-}
-
-// Bollino VS sopra l'immagine, partendo circa da metà immagine
-ctx.textAlign = 'center';
-ctx.fillStyle = '#070a09';
-ctx.strokeStyle = '#10b981';
-ctx.lineWidth = 3;
-ctx.beginPath();
-ctx.arc(vsX, vsY + vsRadius / 2, vsRadius, 0, Math.PI * 2);
-ctx.fill();
-ctx.stroke();
-
-ctx.fillStyle = '#10b981';
-ctx.font = 'bold 22px Outfit, sans-serif';
-ctx.fillText('VS', vsX, vsY + vsRadius / 2 + 8);
-drawTeamRadar(ctx, t1, 330, 900, 70, '#ffffff');
-drawTeamRadar(ctx, t2, 870, 900, 70, '#ffffff');
-
-      // Determine favored team based on lower odds
-      if (t1Odds !== 'N/A' && t2Odds !== 'N/A') {
-        const favored = parseFloat(t1Odds) < parseFloat(t2Odds) ? t1.name : t2.name;
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'italic 20px Outfit, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(`È favorito il ${favored}`, canvasWidth / 2, canvasHeight - 60);
+        // XXX PERSONALIZZARE XXX - cambia qui la dimensione del nome giocatore (34px)
+        ctx.font = `bold 40px ${oldFont}`;
+        const nameX = tableX + 105;
+        const secondaryCount = getPlayerRoles(lp).filter(r => r !== primaryRole(lp)).length;
+        const reservedTagsW = secondaryCount * 39;
+        const name = fitName(lp.name, Math.max(150, 390 - reservedTagsW), ctx.font);
+        drawStretchedText(name, nameX, cy, playerNameStretchX, 'left');
+        const nameWidth = ctx.measureText(name).width * playerNameStretchX;
+        drawSecondaryTags(lp, nameX + nameWidth + 12, cy);
+        const arrow = randomArrowByPlayer.get(lp.id);
+        if (arrow) ctx.drawImage(arrow, midX - 72, cy - 27.5, 55, 55);
       }
 
-    } else {
-      // --- TOURNEY LAYOUT (> 2 SQUADRE) ---
-      teams.forEach((t, tIdx) => {
-        const startX = 40 + tIdx * 280;
-
-        // Card Sfondo
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.roundRect(startX, 130, 260, 640, 16);
-        ctx.fill();
-        ctx.stroke();
-
-        // Intestazione
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 20px Outfit, sans-serif';
-        ctx.fillText(t.name.toUpperCase(), startX + 130, 175);
-
-        const avg = t.players.length > 0 ? (t.ratingSum / t.players.length).toFixed(1) : '0.0';
-        ctx.fillStyle = '#94a3b8';
-        ctx.font = '14px Outfit, sans-serif';
-        ctx.fillText(`Media: ${avg} • Tot: ${t.ratingSum.toFixed(1)}`, startX + 130, 205);
-
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
-        ctx.beginPath();
-        ctx.moveTo(startX + 20, 220);
-        ctx.lineTo(startX + 240, 220);
-        ctx.stroke();
-
-        // Lista Giocatori
-        t.players.forEach((p, idx) => {
-          const y = 260 + idx * 50;
-
-          if (isGoalkeeperPlayer(p)) {
-            ctx.fillStyle = 'rgba(249, 115, 22, 0.2)';
-            ctx.beginPath();
-            ctx.arc(startX + 35, y - 4, 14, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#f97316';
-            ctx.font = '12px Outfit, sans-serif';
-            ctx.fillText('🧤', startX + 35, y + 1);
-          } else {
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
-            ctx.beginPath();
-            ctx.arc(startX + 35, y - 4, 14, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#94a3b8';
-            ctx.font = 'bold 12px Outfit, sans-serif';
-            ctx.fillText(`${idx + 1}`, startX + 35, y + 1);
-          }
-
-          ctx.textAlign = 'left';
-          ctx.fillStyle = '#ffffff';
-          ctx.font = '600 15px Outfit, sans-serif';
-          let nameTxt = p.name;
-if (nameTxt.length > 11) nameTxt = nameTxt.substr(0, 9) + '...';
-
-ctx.fillText(nameTxt, startX + 60, y + 1);
-drawRolePills(ctx, getPlayerRoles(p), startX + 60, y + 10);
-
-          ctx.textAlign = 'right';
-          ctx.font = 'bold 15px Outfit, sans-serif';
-          if (p.rating >= 8) ctx.fillStyle = '#10b981';
-          else if (p.rating >= 6) ctx.fillStyle = '#f59e0b';
-          else ctx.fillStyle = '#ef4444';
-          // ctx.fillText(p.rating.toFixed(1), startX + 240, y + 1);
-          ctx.textAlign = 'center';
-        });
-      });
+      const rp = whitePlayers[i];
+      if (rp) {
+        const cy = y + rowH/2;
+        drawRoleBox(rp, tableX + tableW - 12, cy, true);
+        ctx.fillStyle = '#181a19';
+        ctx.textAlign = 'right';
+        // XXX PERSONALIZZARE XXX - cambia qui la dimensione del nome giocatore (34px)
+        ctx.font = `bold 40px ${oldFont}`;
+        const nameRightX = tableX + tableW - 105;
+        const secondaryCount = getPlayerRoles(rp).filter(r => r !== primaryRole(rp)).length;
+        const reservedTagsW = secondaryCount * 39;
+        const name = fitName(rp.name, Math.max(150, 390 - reservedTagsW), ctx.font);
+        drawStretchedText(name, nameRightX, cy, playerNameStretchX, 'right');
+        const nameWidth = ctx.measureText(name).width * playerNameStretchX;
+        drawSecondaryTags(rp, nameRightX - nameWidth - 12, cy, true);
+        const arrow = randomArrowByPlayer.get(rp.id);
+        if (arrow) ctx.drawImage(arrow, midX + 17, cy - 27.5, 55, 55);
+      }
     }
 
-    // 4. Info di riepilogo in basso
+    // Griglia completa: bordo centrale + colonne ruolo/forma, come nel riferimento.
+    ctx.strokeStyle = '#444947'; ctx.lineWidth = 3;
+    [midX, tableX + 92, midX - 88, midX + 88, tableX + tableW - 92].forEach(x => {
+      ctx.beginPath(); ctx.moveTo(x, bodyTop); ctx.lineTo(x, bodyTop + rows*rowH); ctx.stroke();
+    });
+    ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 1;
+    [tableX + 95, midX - 85, midX + 91, tableX + tableW - 89].forEach(x => {
+      ctx.beginPath(); ctx.moveTo(x, bodyTop); ctx.lineTo(x, bodyTop + rows*rowH); ctx.stroke();
+    });
+    ctx.strokeStyle = '#292d2b'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(midX, tableY); ctx.lineTo(midX, bodyTop + rows*rowH); ctx.stroke();
+
+    // --- AREA INFERIORE: LOGO, EQUILIBRIO E RADAR COMPARATIVO STILE PES ---
+    const footerY = bodyTop + rows * rowH + 18;
+
+    // Logo centrale
+    if (darioLogo) {
+      ctx.drawImage(darioLogo, canvas.width / 2 - 34, footerY, 68, 68);
+    }
+
+    // Dati di equilibrio sotto il logo
+    const metricsY = footerY + 96;
+    ctx.textBaseline = 'middle';
     ctx.textAlign = 'center';
-    ctx.fillStyle = '#64748b';
-    ctx.font = '300 14px Outfit, sans-serif';
-
+    ctx.fillStyle = '#171918';
+    ctx.font = `bold 22px ${oldFont}`;
     if (balanceMetrics) {
-      ctx.fillStyle = '#10b981';
-      ctx.font = '500 15px Outfit, sans-serif';
-      ctx.fillText(`Dislivello Voti: ${balanceMetrics.diff} punti  •  Indice Equilibrio: ${balanceMetrics.percentage}%`, canvasWidth / 2, 1020);
+      ctx.fillText(
+        `DISLIVELLO VOTI: ${balanceMetrics.diff}   •   INDICE EQUILIBRIO: ${balanceMetrics.percentage}%`,
+        canvas.width / 2,
+        metricsY
+      );
     }
 
-    // Condividi o scarica l'immagine
+    // Valori del radar: stessa logica del TeamRadar esistente.
+    const getGraphicRoleAverage = (teamPlayers, role) => {
+      const filtered = teamPlayers.filter(p => getPlayerRoles(p).includes(role));
+      if (!filtered.length) return 0;
+      return filtered.reduce((sum, p) => sum + p.rating, 0) / filtered.length;
+    };
+
+    const getGraphicRadarValues = (team) => ({
+      TOT: team.players.length
+        ? team.players.reduce((sum, p) => sum + p.rating, 0) / team.players.length
+        : 0,
+      POR: (() => {
+        const value = getGraphicRoleAverage(team.players, 'POR');
+        return value > 0 ? value : 3;
+      })(),
+      DIF: getGraphicRoleAverage(team.players, 'DIF'),
+      CEN: getGraphicRoleAverage(team.players, 'CEN'),
+      ATT: getGraphicRoleAverage(team.players, 'ATT')
+    });
+
+    const drawComparisonRadar = (teamBlack, teamWhite, centerX, centerY, radius) => {
+      const axes = ['TOT', 'POR', 'DIF', 'CEN', 'ATT'];
+      const labels = { TOT: 'TOT', POR: 'PT', DIF: 'DI', CEN: 'CC', ATT: 'AT' };
+      const blackValues = getGraphicRadarValues(teamBlack);
+      const whiteValues = getGraphicRadarValues(teamWhite);
+
+      const boxW = radius * 3.45;
+      const boxH = radius * 2.75;
+      const boxX = centerX - boxW / 2;
+      const boxY = centerY - boxH / 2;
+
+      // Cornice nera rettangolare come nella schermata PES.
+      ctx.fillStyle = '#050605';
+      ctx.fillRect(boxX, boxY, boxW, boxH);
+      ctx.strokeStyle = '#111311';
+      ctx.lineWidth = 7;
+      ctx.strokeRect(boxX, boxY, boxW, boxH);
+      ctx.strokeStyle = '#777b77';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(boxX + 7, boxY + 7, boxW - 14, boxH - 14);
+
+      // Fascia superiore leggermente metallica.
+      const radarHeader = ctx.createLinearGradient(boxX, boxY, boxX + boxW, boxY);
+      radarHeader.addColorStop(0, '#3b3d3a');
+      radarHeader.addColorStop(0.5, '#777a75');
+      radarHeader.addColorStop(1, '#343633');
+      ctx.fillStyle = radarHeader;
+      ctx.fillRect(boxX + 9, boxY + 9, boxW - 18, 30);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `bold 16px ${oldFont}`;
+      ctx.textAlign = 'center';
+      ctx.fillText('BLACK TEAM  /  WHITE TEAM', centerX, boxY + 24);
+
+      const getPoint = (index, value = 10) => {
+        const angle = -Math.PI / 2 + index * 2 * Math.PI / axes.length;
+        const r = radius * (Math.max(0, Math.min(10, value)) / 10);
+        return {
+          x: centerX + Math.cos(angle) * r,
+          y: centerY + 15 + Math.sin(angle) * r
+        };
+      };
+
+      // Pentagoni/griglia grigi.
+      [0.25, 0.5, 0.75, 1].forEach(level => {
+        ctx.beginPath();
+        axes.forEach((_, index) => {
+          const p = getPoint(index, 10 * level);
+          if (index === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+        });
+        ctx.closePath();
+        ctx.strokeStyle = level === 1 ? '#a4a7a2' : '#555955';
+        ctx.lineWidth = level === 1 ? 2 : 1;
+        ctx.stroke();
+      });
+
+      axes.forEach((axis, index) => {
+        const endPoint = getPoint(index, 10);
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY + 15);
+        ctx.lineTo(endPoint.x, endPoint.y);
+        ctx.strokeStyle = '#454845';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        const labelPoint = getPoint(index, 12.1);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `bold 17px ${oldFont}`;
+        ctx.textAlign = 'center';
+        ctx.fillText(labels[axis], labelPoint.x, labelPoint.y);
+      });
+
+      const drawTeamPolygon = (values, stroke, fill) => {
+        ctx.beginPath();
+        axes.forEach((axis, index) => {
+          const p = getPoint(index, values[axis]);
+          if (index === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+        });
+        ctx.closePath();
+        ctx.fillStyle = fill;
+        ctx.fill();
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = 5;
+        ctx.stroke();
+      };
+
+      // Prima il Black, poi il White: sovrapposti sullo stesso radar.
+      // Il riempimento resta grigio/trasparente, le linee identificano le squadre.
+      drawTeamPolygon(blackValues, '#050505', 'rgba(85,85,85,0.24)');
+      drawTeamPolygon(whiteValues, '#ffffff', 'rgba(210,210,210,0.16)');
+
+      // Piccola legenda inferiore.
+      const legendY = boxY + boxH - 22;
+      ctx.font = `bold 15px ${oldFont}`;
+      ctx.textBaseline = 'middle';
+
+      ctx.strokeStyle = '#050505';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(centerX - 160, legendY);
+      ctx.lineTo(centerX - 115, legendY);
+      ctx.stroke();
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'left';
+      ctx.fillText('BLACK', centerX - 105, legendY);
+
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(centerX + 45, legendY);
+      ctx.lineTo(centerX + 90, legendY);
+      ctx.stroke();
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText('WHITE', centerX + 100, legendY);
+    };
+
+    const radarCenterY = metricsY + 185;
+    drawComparisonRadar(blackTeam, whiteTeam, canvas.width / 2, radarCenterY, 105);
+
+    // Firma finale
+    ctx.font = `bold 16px ${oldFont}`;
+    ctx.fillStyle = '#333';
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'left';
+    ctx.fillText('GREEN CALCIO', tableX, canvas.height - 22);
+    ctx.textAlign = 'right';
+    ctx.fillText('BLACK TEAM  vs  WHITE TEAM', tableX + tableW, canvas.height - 22);
+
     canvas.toBlob(async (blob) => {
       if (!blob) return;
-
-      const file = new File(
-        [blob],
-        'black-vs-white.png',
-        { type: 'image/png' }
-      );
-
+      const file = new File([blob], 'black-vs-white.png', { type:'image/png' });
       try {
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          await navigator.share({
-            files: [file],
-            title: 'Green Calcio',
-            text: 'Formazioni ufficiali Green Calcio'
-          });
-
-          showToast("Immagine pronta per la condivisione! 📲");
+        if (navigator.canShare && navigator.canShare({ files:[file] })) {
+          await navigator.share({ files:[file], title:'Green Calcio', text:'Black Team vs White Team' });
+          showToast('Immagine pronta per la condivisione! 📲');
         } else {
-          const link = document.createElement('a');
-          link.download = 'black-vs-white.png';
-          link.href = URL.createObjectURL(blob);
-          link.click();
-          URL.revokeObjectURL(link.href);
-
-          showToast("Immagine black-vs-white.png scaricata! 📸");
+          const link = document.createElement('a'); link.download='black-vs-white.png';
+          link.href=URL.createObjectURL(blob); link.click(); URL.revokeObjectURL(link.href);
+          showToast('Immagine black-vs-white.png scaricata! 📸');
         }
       } catch (error) {
-        console.error("Errore condivisione/download:", error);
-
-        const link = document.createElement('a');
-        link.download = 'black-vs-white.png';
-        link.href = URL.createObjectURL(blob);
-        link.click();
-        URL.revokeObjectURL(link.href);
-
-        showToast("Download immagine avviato 📸");
+        console.error('Errore condivisione/download:', error);
+        const link=document.createElement('a'); link.download='black-vs-white.png';
+        link.href=URL.createObjectURL(blob); link.click(); URL.revokeObjectURL(link.href);
       }
     }, 'image/png');
   };
@@ -1260,7 +1361,7 @@ const drawTeamRadar = (ctx, team, centerX, centerY, radius, titleColor = '#fffff
     return teams.find(t => t.id === pitchTeamBId) || null;
   }, [teams, pitchTeamBId]);
 
-  const getTacticalLines = (team) => {
+  const getAutoTacticalLines = (team) => {
   if (!team) return { gk: [], def: [], mid: [], att: [] };
 
   const players = [...team.players];
@@ -1308,6 +1409,48 @@ const drawTeamRadar = (ctx, team, centerX, centerY, radius, titleColor = '#fffff
     att
   };
 };
+
+  // Mantiene le posizioni tattiche dopo gli scambi manuali.
+  // Se una squadra non ha ancora slot salvati, usa il calcolo automatico originale.
+  const getTacticalLines = (team) => {
+    if (!team) return { gk: [], def: [], mid: [], att: [] };
+
+    const hasSavedLayout = team.players.length > 0 && team.players.every(
+      p => p.tacticalLine && Number.isInteger(p.tacticalSlot)
+    );
+
+    if (!hasSavedLayout) return getAutoTacticalLines(team);
+
+    const byLine = (line) => team.players
+      .filter(p => p.tacticalLine === line)
+      .sort((a, b) => a.tacticalSlot - b.tacticalSlot);
+
+    return {
+      gk: byLine('gk'),
+      def: byLine('def'),
+      mid: byLine('mid'),
+      att: byLine('att')
+    };
+  };
+
+  const applyTacticalSlots = (team) => {
+    const lines = getAutoTacticalLines(team);
+    const slotById = new Map();
+
+    Object.entries(lines).forEach(([line, linePlayers]) => {
+      linePlayers.forEach((player, slot) => {
+        slotById.set(player.id, { tacticalLine: line, tacticalSlot: slot });
+      });
+    });
+
+    return {
+      ...team,
+      players: team.players.map(player => ({
+        ...player,
+        ...(slotById.get(player.id) || {})
+      }))
+    };
+  };
 
 const getPrimaryRoleForLine = (player, line) => {
   if (isGoalkeeperPlayer(player)) return 'POR';
@@ -1929,7 +2072,7 @@ const getRoleColor = (role) => {
                   <strong>Regola manualmente:</strong> Puoi scambiare due giocatori cliccando sul bottone di scambio ⇄. Nota: per non alterare il bilanciamento dei ruoli, i portieri 🧤 possono essere scambiati solo con altri portieri!
                   {selectedPlayerForSwap && (
                     <div style={{ marginTop: '8px', color: '#fff', fontWeight: 600 }}>
-                      [Selezionato per Scambio]: {teams.find(t => t.id === selectedPlayerForSwap.teamId).players[selectedPlayerForSwap.playerIndex].name}
+                      [Selezionato per Scambio]: {teams.find(t => t.id === selectedPlayerForSwap.teamId)?.players.find(p => p.id === selectedPlayerForSwap.playerId)?.name}
                       <button
                         type="button"
                         onClick={() => setSelectedPlayerForSwap(null)}
@@ -2032,7 +2175,7 @@ const getRoleColor = (role) => {
                       {team.players.map((player, pIdx) => {
                         const isSelected = selectedPlayerForSwap &&
                           selectedPlayerForSwap.teamId === team.id &&
-                          selectedPlayerForSwap.playerIndex === pIdx;
+                          selectedPlayerForSwap.playerId === player.id;
 
                         return (
                           <div
@@ -2140,7 +2283,7 @@ const getRoleColor = (role) => {
         const pIdx = pitchTeamA.players.indexOf(player);
         const isSelected = selectedPlayerForSwap &&
           selectedPlayerForSwap.teamId === pitchTeamA.id &&
-          selectedPlayerForSwap.playerIndex === pIdx;
+          selectedPlayerForSwap.playerId === player.id;
         const teamColorIndex = (teams.indexOf(pitchTeamA) % 6) + 1;
 
         return (
@@ -2177,7 +2320,7 @@ const getRoleColor = (role) => {
         const pIdx = pitchTeamB.players.indexOf(player);
         const isSelected = selectedPlayerForSwap &&
           selectedPlayerForSwap.teamId === pitchTeamB.id &&
-          selectedPlayerForSwap.playerIndex === pIdx;
+          selectedPlayerForSwap.playerId === player.id;
         const teamColorIndex = (teams.indexOf(pitchTeamB) % 6) + 1;
 
         return (
