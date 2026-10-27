@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import TeamRadar from './TeamRadar';
+import { exportFormationVideo } from './videoExporter';
 
 // --- ICONE SVG INLINE PER EVITARE DIPENDENZE ---
 const IconSoccer = () => (
@@ -1291,6 +1292,31 @@ const drawSecondaryTags = (player, x, y, right = false) => {
     }, 'image/png');
   };
 
+
+  // --- EXPORT VIDEO FORMAZIONE STILE PES ---
+  const handleDownloadVideo = async () => {
+    if (!teams || teams.length < 2) return;
+
+    const blackTeam = teams.find(t => t.name.toLowerCase().includes('black')) || teams[0];
+    const whiteTeam = teams.find(t => t.name.toLowerCase().includes('white')) || teams[1];
+
+    try {
+      showToast('Preparazione video in corso... 🎬');
+
+      await exportFormationVideo({
+        blackTeam,
+        whiteTeam,
+        balanceMetrics,
+        getPlayerRoles,
+        isGoalkeeperPlayer,
+        showToast
+      });
+    } catch (error) {
+      console.error('Errore esportazione video:', error);
+      showToast(error?.message || 'Errore durante la generazione del video');
+    }
+  };
+
   const getRoleAverage = (teamPlayers, role) => {
   const filtered = teamPlayers.filter(p => getPlayerRoles(p).includes(role));
   if (filtered.length === 0) return 0;
@@ -2161,6 +2187,14 @@ const getRoleColor = (role) => {
                   title="Scarica la formazione ufficiale come immagine PNG"
                 >
                   <IconDownload /> Scarica Grafica
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={handleDownloadVideo}
+                  title="Genera il video formazione con musica e reveal"
+                >
+                  🎬 Scarica Video
                 </button>
                 <button
                   type="button"
